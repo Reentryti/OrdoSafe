@@ -1,6 +1,17 @@
-# MedSec – Prescription Médicale Sécurisé
+  <pre>           ██████╗ ██████╗ ██████╗  ██████╗ ███████╗ █████╗ ███████╗███████╗
+          ██╔═══██╗██╔══██╗██╔══██╗██╔═══██╗██╔════╝██╔══██╗██╔════╝██╔════╝
+          ██║   ██║██████╔╝██║  ██║██║   ██║███████╗███████║█████╗  █████╗  
+          ██║   ██║██╔══██╗██║  ██║██║   ██║╚════██║██╔══██║██╔══╝  ██╔══╝ 
+          ╚██████╔╝██║  ██║██████╔╝╚██████╔╝███████║██║  ██║██║     ███████╗
+           ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚══════╝  </pre>
 
-**MedSec** est une application web sécurisée conçue pour faciliter la création, la validation et la consultation d’ordonnances médicales numériques. Ce système centralise les interactions entre les professionnels de santé (médecins, pharmaciens) et les patients tout en garantissant un haut niveau de sécurité, de traçabilité et de confidentialité.
+
+                                                                  
+                                                                  
+
+# Plateforme de Prescription Médicale Sécurisé
+
+**OrdoSafe** est une application web sécurisée conçue pour faciliter la création, la validation et la consultation d’ordonnances médicales numériques. Ce système centralise les interactions entre les professionnels de santé (médecins, pharmaciens) et les patients tout en garantissant un haut niveau de sécurité, de traçabilité et de confidentialité.
 
 Ce projet s’inscrit dans une démarche **DevSecOps**, intégrant la sécurité dès les premières étapes du développement jusqu’au déploiement.
 
@@ -28,12 +39,12 @@ Ce projet s’inscrit dans une démarche **DevSecOps**, intégrant la sécurité
 
 ## Technologies prévues
 
-- **Backend** : 
-- **Frontend** :
-- **Base de données** : 
-- **Authentification** : 
-- **Conteneurisation** : 
-- **Sécurité DevOps** : 
+- **Backend** : Python (Django)
+- **Frontend** : Vue.js
+- **Base de données** : MySQL
+- **Tests unitaires et d'intégration** : GitHub Actions
+- **Conteneurisation** : Docker
+- **Sécurité DevOps** : HTTPS, AES, OTP, JWT
 
 ---
 
