@@ -40,6 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -48,6 +52,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -135,3 +140,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentification configuration
 AUTH_USER_MODEL = 'utilisateurs.BasicUser'
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+
+# Email 2FA Configuration
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_HOST = config('EMAIL_HOST')
+#EMAIL_PORT = config('EMAIL_PORT')
+#EMAIL_USE_TLS = config('EMAIL_USE_TLS')
+#EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+#EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+# Sms 2FA Configuration
+#TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
+#TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
+#TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER')

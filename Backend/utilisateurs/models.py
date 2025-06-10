@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager 
+from django.core.validators import validate_email
+from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
 
@@ -22,7 +24,15 @@ class BasicUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     date_birth = models.DateField()
-    email = models.EmailField(unique=True)
+    email = models.EmailField(validators=[validate_email], unique=True)
+    phone_number = PhoneNumberField(region='SN', blank=True, default='')
+    two_factor_method = models.CharField(
+        max_length=10,
+        choices=[('email', 'Email'), ('sms', 'SMS')],
+        default='email'
+    )
+    totp_secret = models.CharField(max_length=32, blank=True, null=True)
+    backup_codes = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 

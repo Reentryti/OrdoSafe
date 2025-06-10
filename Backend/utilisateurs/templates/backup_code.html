@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-warning">
+          <h3 class="mb-0">Codes de secours</h3>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning">
+            <strong>Important !</strong> Conservez ces codes en lieu sûr. 
+            Chaque code ne peut être utilisé qu'une seule fois.
+          </div>
+          
+          <div class="list-group mb-4">
+            {% for code in backup_codes %}
+              <div class="list-group-item font-monospace text-center">{{ code }}</div>
+            {% endfor %}
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button class="btn btn-success" onclick="window.print()">
+              <i class="fas fa-print"></i> Imprimer
+            </button>
+            <a href="{% url 'profile' %}" class="btn btn-primary">
+              J'ai enregistré mes codes
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

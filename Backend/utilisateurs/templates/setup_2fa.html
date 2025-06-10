@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">Configurer l'authentification à deux facteurs</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 text-center">
+              <h5>Étape 1: Scanner le QR code</h5>
+              <img src="https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl={{ qr_code_url|urlencode }}" 
+                   alt="QR Code" class="img-fluid mb-3">
+              <p class="small text-muted">
+                Utilisez une application comme Google Authenticator, Microsoft Authenticator ou Authy
+              </p>
+            </div>
+            
+            <div class="col-md-6">
+              <h5>Étape 2: Valider le code</h5>
+              <p>Entrez le code à 6 chiffres affiché dans votre application :</p>
+              
+              <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                  <input type="text" 
+                         name="token" 
+                         class="form-control" 
+                         placeholder="123456" 
+                         required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Activer la 2FA</button>
+                <a href="{% url 'profile' %}" class="btn btn-link">Plus tard</a>
+              </form>
+              
+              <hr>
+              
+              <h5>Configuration manuelle</h5>
+              <p>Si vous ne pouvez pas scanner le QR code :</p>
+              <div class="alert alert-secondary">
+                <strong>Clé secrète :</strong> {{ device.key }}<br>
+                <strong>Type :</strong> TOTP<br>
+                <strong>Intervalle :</strong> 30 secondes
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">Vérification en deux étapes</h3>
+        </div>
+        <div class="card-body">
+          <p class="text-center">
+            <i class="fas fa-mobile-alt fa-3x mb-3"></i><br>
+            Entrez le code à 6 chiffres de votre application d'authentification
+          </p>
+          
+          <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+              <div class="alert alert-danger">
+                Code incorrect. Veuillez réessayer.
+              </div>
+            {% endif %}
+            
+            <div class="form-group">
+              <input type="text" 
+                     name="otp_token" 
+                     class="form-control text-center" 
+                     placeholder="123456" 
+                     autofocus
+                     required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Vérifier</button>
+            
+            <div class="text-center mt-3">
+              <a href="#" class="text-muted">Problème avec l'authentification ?</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
