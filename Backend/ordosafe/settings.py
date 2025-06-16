@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from decouple import config
+from cryptography.fernet import Fernet
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,10 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_otp',
+    'django_otp', # 2FA modules
     'django_otp.plugins.otp_totp',
     'django_otp.plugins.otp_static',
-    'phonenumber_field',
+    'phonenumber_field', #phone field (compulsory)
 ]
 
 MIDDLEWARE = [
@@ -55,6 +56,7 @@ MIDDLEWARE = [
     'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'utilisateurs.middleware.LoginAttemptMiddleware',
 ]
 
 ROOT_URLCONF = 'ordosafe.urls'
@@ -62,7 +64,9 @@ ROOT_URLCONF = 'ordosafe.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+           
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -141,6 +145,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Authentification configuration
 AUTH_USER_MODEL = 'utilisateurs.BasicUser'
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+
+
+# CYPHER METHOD
+FERNET_KEY = config('FERNET_KEY')
+
+# Anti Brute Force Configuration
+LOGIN_ATTEMPTS_LIMIT = config('LOGIN_ATTEMPTS_LIMIT', default=5, cast=int)
+LOGIN_LOCKOUT_DURATION = config('LOGIN_LOCKOUT_DURATION', default=60, cast=int)
 
 # Email 2FA Configuration
 #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
