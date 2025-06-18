@@ -211,22 +211,28 @@ class DoctorCreationForm(UserCreationForm):
         return email
     
     def save(self, commit=True):
-        user = BasicUser.objects.create_user(
-            #user_type= 'doctor',
-            email= self.cleaned_data['email'],
-            password= self.cleaned_data['password1'],
-            first_name= self.cleaned_data['first_name'],
-            last_name= self.cleaned_data['last_name'],
-            date_birth= self.cleaned_data['date_birth'],
-            phone_number= self.cleaned_data['phone_number'],
-            two_factor_method= self.cleaned_data['two_factor_method']
-        )
-        doctor = Doctor.objects.create(
-            user=user,
-            licence_number= self.cleaned_data['licence_number'],
-            specialisation= self.cleaned_data['specialisation']
-        )
-        return doctor
+        try:
+            with transaction.atomic():
+                user = BasicUser.objects.create_user(
+                #user_type= 'doctor',
+                email= self.cleaned_data['email'],
+                password= self.cleaned_data['password1'],
+                date_birth= self.cleaned_data['date_birth'])
+                user.first_name= self.cleaned_data['first_name'],
+                user.last_name= self.cleaned_data['last_name'],
+                    
+                user.phone_number= self.cleaned_data['phone_number'],
+                user.two_factor_method= self.cleaned_data['two_factor_method']
+                user.save()
+                doctor = Doctor.objects.create(
+                    user=user,
+                    licence_number= self.cleaned_data['licence_number'],
+                    specialisation= self.cleaned_data['specialisation']
+                )
+                return doctor
+        except Exception as e:
+            print(f"Erreur lors de l'inscription: {e}")
+            raise e
 
 
 # Form Control (Pharmacist input)
