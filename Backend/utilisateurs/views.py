@@ -43,7 +43,7 @@ def setup_2fa(request):
 
             request.session['backup_codes'] = backup_codes
             messages.success(request, "2FA activée avec succés")
-            return redirect('backp_codes')
+            return redirect('backup_codes')
         else:
             messages.error(request, "Code incorrect")
 
@@ -79,7 +79,7 @@ def backup_codes(request):
             messages.error(request, "Aucun code de sauvegarde disponible")
             return redirect('setup_2fa')
     
-    return render(request, 'backup_codes.html', {'backup_codes': backup_codes})
+    return render(request, 'auth/backup_codes.html', {'backup_codes': backup_codes})
 
 
 ###############################
@@ -198,7 +198,7 @@ class PatientSignUpView(BaseSignupView):
 def patient_dash(request):
     if not hasattr(request.user, 'patient_profile'):
         return redirect('home')
-    return render(request, 'patient/dashboard.html')
+    return render(request, 'patients/dash.html')
 
 
 ########################################

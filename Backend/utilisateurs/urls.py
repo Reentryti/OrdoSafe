@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .views import (
-    PatientSignUpView, PatientLoginView, PatientLogin2faView,
+    PatientSignUpView, PatientLoginView, PatientLogin2faView, patient_dash,
     DoctorSignUpView, DoctorLoginView, DoctorLogin2faView,
     PharmacistSignUpView, PharmacistLoginView, PharmacistLogin2faView
 )
@@ -13,6 +13,7 @@ urlpatterns = [
     path('patient/login/', PatientLoginView.as_view(), name='patient_login'),
     path('patient/login/2fa/', PatientLogin2faView.as_view(), name='patient_login_2fa'),
     path('patient/signup/', PatientSignUpView.as_view(), name='patient_signup'),
+    path('patient/dash/', views.patient_dash, name='patient_dash'),
 
     path('doctor/login/', DoctorLoginView.as_view(), name='doctor_login'),
     path('doctor/login/2fa/', DoctorLogin2faView.as_view(), name='doctor_login_2fa'),
@@ -20,5 +21,5 @@ urlpatterns = [
 
     path('pharmacist/login', PharmacistLoginView.as_view(), name='pharmacist_login'),
     path('pharmacist/login_2fa/', PharmacistLogin2faView.as_view(), name='pharmacist_login_2fa'),
-    path('pharmacist/signup', PharmacistSignUpView.as_view(), name='pharmacist_signup'),
+    path('pharmacist/signup/', PharmacistSignUpView.as_view(), name='pharmacist_signup'),
 ]
