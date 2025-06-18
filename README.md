@@ -99,9 +99,11 @@ python manage.py runserver
 
 ## 7. Tester l’API
 
-- 🔐 http://127.0.0.1:8000/admin/
-- 📄 http://127.0.0.1:8000/api/ordonnances/
-- 💊 http://127.0.0.1:8000/api/medicaments/
+- http://127.0.0.1:8000/admin/
+- http://127.0.0.1:8000/api/ordonnances/
+- http://127.0.0.1:8000/api/medicaments/
+- http://127.0.0.1:8000/api/patient/signup/
+- http://127.0.0.1:8000/api/patient/login/
 
 ---
 
