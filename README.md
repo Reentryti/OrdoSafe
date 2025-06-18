@@ -48,3 +48,82 @@ Ce projet s’inscrit dans une démarche **DevSecOps**, intégrant la sécurité
 
 ---
 
+---
+
+##  Instructions d’installation et d’exécution
+
+## 1. Cloner le projet
+
+```bash
+git clone https://github.com/Reentryti/OrdoSafe
+cd OrdoSafe
+```
+
+## 2. Créer un environnement virtuel (optionnel)
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+## 3. Installer les dépendances
+
+```bash
+pip install -r requirements.txt
+```
+
+> ou simplement :
+
+```bash
+pip install django djangorestframework
+```
+
+## 4. Appliquer les migrations
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+## 5. Créer un superutilisateur
+
+```bash
+python manage.py createsuperuser
+```
+
+## 6. Lancer le serveur
+
+```bash
+python manage.py runserver
+```
+
+## 7. Tester l’API
+
+- 🔐 http://127.0.0.1:8000/admin/
+- 📄 http://127.0.0.1:8000/api/ordonnances/
+- 💊 http://127.0.0.1:8000/api/medicaments/
+
+---
+
+##  Exemple JSON à tester (POST /api/ordonnances/)
+
+```json
+{
+  "patient": 2,
+  "medecin": 3,
+  "medicaments": [
+    {
+      "nom": "Doliprane",
+      "dosage": "500mg",
+      "frequence": "3 fois par jour"
+    },
+    {
+      "nom": "Amoxicilline",
+      "dosage": "250mg",
+      "frequence": "2 fois par jour"
+    }
+  ],
+  "statut": "validee"
+}
+```
+
