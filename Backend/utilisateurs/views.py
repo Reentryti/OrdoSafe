@@ -14,6 +14,8 @@ from rest_framework.views import View
 from io import BytesIO
 from django.http import HttpResponse
 
+from audit.utils import log_security_event
+
 # Create your views here.
 User = get_user_model()
 
