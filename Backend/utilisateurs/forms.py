@@ -1,11 +1,11 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import Patient, BasicUser
+from .models import Patient, BasicUser, Doctor, Pharmacist
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import datetime
 from phonenumber_field.formfields import PhoneNumberField
-from phonenumber_field.widget import PhoneNumberPrefixWidget
+from django.db import transaction
 
 
 # Forms Control (Patient input)
@@ -21,10 +21,11 @@ class PatientCreationForm(UserCreationForm):
     )
     date_birth = forms.DateField(
         label="Date de naissance",
+        required=True,
         widget=forms.DateInput(attrs={
             'class':'form-control',
             'type':'date',
-            'max':datetime.date.today().strftime('%d-%m-%Y')
+            'max':datetime.date.today().strftime('%Y-%m-%d')
         })
     )
     email = forms.EmailField(
@@ -32,12 +33,12 @@ class PatientCreationForm(UserCreationForm):
         validators=[validate_email],
         widget=forms.EmailInput(attrs={'class':'form-control'})
     )
-    phone_number = forms.PhoneNumberField(
+    phone_number = PhoneNumberField(
         label="Numero de téléphone",
         region='SN',
         required=False,
-        widget=PhoneNumberPrefixWidget(attrs={
-            'class':'form-contrl',
+        widget=forms.TextInput(attrs={
+            'class':'form-control',
             'placeholder':'77 777 77 77'
         })
     )
@@ -48,7 +49,9 @@ class PatientCreationForm(UserCreationForm):
         widget=forms.Select(attrs={'class':'form-select'})
     )
     weight = forms.IntegerField(
-        label="Poids(kg)", 
+        label="Poids(kg)",
+        min_value=1,
+        max_value=500,
         widget=forms.NumberInput(attrs={'class':'form-control'}))
     blood_type = forms.ChoiceField(
         label="Groupe sanguin",
@@ -67,7 +70,7 @@ class PatientCreationForm(UserCreationForm):
         required=False,
         widget=forms.Textarea(attrs={
             'class':'form-control', 
-            'row':3, 
+            'rows':3, 
             'placeholder':'Renseignez les allergies connues séparées dune virgule'})
     )
     password1 = forms.CharField(
@@ -80,9 +83,9 @@ class PatientCreationForm(UserCreationForm):
     )
 
     class Meta:
-        model = Patient
+        model = BasicUser
         fields = [
-            'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'weight', 'blood_type', 'allergies', 'password1', 'password2'
+            'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'password1', 'password2'
         ]
     
     def clean_email(self):
@@ -90,27 +93,52 @@ class PatientCreationForm(UserCreationForm):
         if BasicUser.objects.filter(email=email).exists():
             raise ValidationError("Utilisateur deja existant")
         return email
+    
+    def clean_date_birth(self):
+        date_birth = self.cleaned_data.get('date_birth')
+        if date_birth:
+            today = datetime.date.today()
+            age = today.year - date_birth.year - ((today.month, today.day) < (date_birth.month, date_birth.day))
+            if age < 0:
+                raise ValidationError("La date de naissance ne peut pas être dans le futur")
+            if age > 150:
+                raise ValidationError("Âge invalide")
+        return date_birth
 
     def save(self, commit=True):
         # Specific user field 
-        user = BasicUser.objects.create_user(
-            user_type= 'patient',
-            email= self.cleaned_data['email'],
-            password= self.cleaned_data['password'],
-            first_name= self.cleaned_data['first_name'],
-            last_name= self.cleaned_data['last_name'],
-            date_birth= self.cleaned_data['date_birth'],
-            phone_number= self.cleaned_data['phone_number'],
-            two_factor_method= self.cleaned_data['two_factor_method']
-        )
-        # Specific patient field (for integration btw them)
-        patient = Patient.objets.create(
-            user= user,
-            weight= self.cleaned_data['weight'],
-            blood_type= self.cleaned_data['blood_type'],
-            allergies= self.cleaned_data['allergies']
-        )
-        return patient
+        # Debug
+        
+        #print("Date de naissance:", self.cleaned_data.get('date_birth'))
+        #print("Type:", type(self.cleaned_data.get('date_birth')))
+        #print("Est None?", self.cleaned_data.get('date_birth') is None)
+        #print("Toutes les données:", self.cleaned_data)
+        
+        try:
+            with transaction.atomic(): # Solve storing wrong forms
+                
+                user = BasicUser.objects.create_user(
+                #user_type= 'patient',
+                email= self.cleaned_data['email'],
+                password= self.cleaned_data['password1'],
+                date_birth= self.cleaned_data['date_birth'])
+                user.first_name= self.cleaned_data['first_name']
+                user.last_name= self.cleaned_data['last_name']
+                user.phone_number= self.cleaned_data['phone_number']
+                user.two_factor_method= self.cleaned_data['two_factor_method']
+                user.save()
+                
+                # Specific patient field (for integration btw them)
+                patient = Patient.objects.create(
+                    user= user,
+                    weight= self.cleaned_data['weight'],
+                    blood_type= self.cleaned_data['blood_type'],
+                    allergies= self.cleaned_data['allergies']
+                )
+                return user
+        except Exception as e:
+            print(f"Erreur lors de l'inscription: {e}")
+            raise e
 
 
 # Form Control (Doctor input)
@@ -129,7 +157,7 @@ class DoctorCreationForm(UserCreationForm):
         widget=forms.DateInput(attrs={
             'class':'form-control',
             'type':'date',
-            'max':datetime.date.today().strftime('%d-%m-%Y')
+            'max':datetime.date.today().strftime('%Y-%m-%d')
         })
     )
     email = forms.EmailField(
@@ -137,12 +165,12 @@ class DoctorCreationForm(UserCreationForm):
         validators=[validate_email],
         widget=forms.EmailInput(attrs={'class':'form-control'})
     )
-    phone_number = forms.PhoneNumberField(
+    phone_number = PhoneNumberField(
         label="Numero de téléphone",
         region='SN',
         required=False,
-        widget=PhoneNumberPrefixWidget(attrs={
-            'class':'form-contrl',
+        widget=forms.TextInput(attrs={
+            'class':'form-control',
             'placeholder':'77 777 77 77'
         })
     )
@@ -184,9 +212,9 @@ class DoctorCreationForm(UserCreationForm):
     
     def save(self, commit=True):
         user = BasicUser.objects.create_user(
-            user_type= 'doctor',
+            #user_type= 'doctor',
             email= self.cleaned_data['email'],
-            password= self.cleaned_data['password'],
+            password= self.cleaned_data['password1'],
             first_name= self.cleaned_data['first_name'],
             last_name= self.cleaned_data['last_name'],
             date_birth= self.cleaned_data['date_birth'],
@@ -198,7 +226,7 @@ class DoctorCreationForm(UserCreationForm):
             licence_number= self.cleaned_data['licence_number'],
             specialisation= self.cleaned_data['specialisation']
         )
-    return doctor
+        return doctor
 
 
 # Form Control (Pharmacist input)
@@ -225,12 +253,12 @@ class PharmacistCreationForm(UserCreationForm):
         validators=[validate_email],
         widget=forms.EmailInput(attrs={'class':'form-control'})
     )
-    phone_number = forms.PhoneNumberField(
+    phone_number = PhoneNumberField(
         label="Numero de téléphone",
         region='SN',
         required=False,
-        widget=PhoneNumberPrefixWidget(attrs={
-            'class':'form-contrl',
+        widget=forms.TextInput(attrs={
+            'class':'form-control',
             'placeholder':'77 777 77 77'
         })
     )
@@ -263,7 +291,7 @@ class PharmacistCreationForm(UserCreationForm):
             'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'licence_number', 'pharmacy_name', 'password1', 'password2'
         ]
     
-    def clear_email(self):
+    def clean_email(self):
         email = self.cleaned_data.get('email')
         if BasicUser.objects.filter(email=email).exists():
             raise ValidationError("Utilisateur existant")
@@ -271,9 +299,9 @@ class PharmacistCreationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = BasicUser.objects.create_user(
-            user_type= 'pharmacist',
+            #user_type= 'pharmacist',
             email= self.cleaned_data['email'],
-            password= self.cleaned_data['password'],
+            password= self.cleaned_data['password1'],
             first_name= self.cleaned_data['first_name'],
             last_name= self.cleaned_data['last_name'],
             date_birth= self.cleaned_data['date_birth'],
@@ -285,4 +313,4 @@ class PharmacistCreationForm(UserCreationForm):
             licence_number= self.cleaned_data['licence_number'],
             pharmacy_name= self.cleaned_data['pharmacy_name']
         )
-    return pharmacist
+        return pharmacist

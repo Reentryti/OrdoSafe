@@ -1,0 +1,127 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Inscription Médecin{% endblock %}
+{% block header_class %}success{% endblock %}
+{% block auth_title %}Créer un compte Médecin{% endblock %}
+
+{% block auth_content %}
+<!-- Affichage des messages d'erreur globaux -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    
+    <!-- Affichage des erreurs non-field -->
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+    
+    <h5>Informations personnelles</h5>
+    
+    <div class="mb-3">
+        {{ form.first_name.label_tag }}
+        {{ form.first_name }}
+        {% if form.first_name.errors %}
+            <div class="text-danger">{{ form.first_name.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        {{ form.last_name.label_tag }}
+        {{ form.last_name }}
+        {% if form.last_name.errors %}
+            <div class="text-danger">{{ form.last_name.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        {{ form.date_birth.label_tag }}
+        {{ form.date_birth }}
+        {% if form.date_birth.errors %}
+            <div class="text-danger">{{ form.date_birth.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        {{ form.email.label_tag }}
+        {{ form.email }}
+        {% if form.email.errors %}
+            <div class="text-danger">{{ form.email.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        {{ form.phone_number.label_tag }}
+        {{ form.phone_number }}
+        {% if form.phone_number.errors %}
+            <div class="text-danger">{{ form.phone_number.errors }}</div>
+        {% endif %}
+    </div>
+
+    <h5>Informations professionnelles</h5>
+    
+    <div class="mb-3">
+        {{ form.licence_number.label_tag }}
+        {{ form.licence_number }}
+        {% if form.licence_number.errors %}
+            <div class="text-danger">{{ form.licence_number.errors }}</div>
+        {% endif %}
+        <div class="form-text">Numéro de licence médicale officiel</div>
+    </div>
+    
+    <div class="mb-3">
+        {{ form.specialisation.label_tag }}
+        {{ form.specialisation }}
+        {% if form.specialisation.errors %}
+            <div class="text-danger">{{ form.specialisation.errors }}</div>
+        {% endif %}
+        <div class="form-text">Ex: Cardiologie, Pédiatrie, Médecine générale...</div>
+    </div>
+
+    <h5>Authentification</h5>
+    
+    <div class="mb-3">
+        {{ form.two_factor_method.label_tag }}
+        {{ form.two_factor_method }}
+        {% if form.two_factor_method.errors %}
+            <div class="text-danger">{{ form.two_factor_method.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        {{ form.password1.label_tag }}
+        {{ form.password1 }}
+        {% if form.password1.errors %}
+            <div class="text-danger">{{ form.password1.errors }}</div>
+        {% endif %}
+    </div>
+    
+    <div class="mb-3">
+        {{ form.password2.label_tag }}
+        {{ form.password2 }}
+        {% if form.password2.errors %}
+            <div class="text-danger">{{ form.password2.errors }}</div>
+        {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-success w-100">S'inscrire comme Médecin</button>
+</form>
+
+<div class="text-center mt-3">
+    Déjà un compte? <a href="{% url 'doctor_login' %}">Se connecter</a>
+</div>
+
+<div class="text-center mt-2">
+    <small class="text-muted">
+        Vous êtes un patient? <a href="{% url 'patient_signup' %}">Créer un compte patient</a>
+    </small>
+</div>
+{% endblock %}

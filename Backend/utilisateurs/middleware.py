@@ -1,6 +1,6 @@
 from django.utils.deprecation import MiddlewareMixin
 from .models import LoginAttempt
-from django.htpp import HttpResponseForbidden
+from django.http import HttpResponseForbidden
 from django.conf import settings
 
 # Middleware to log login attempts

@@ -9,9 +9,14 @@ from django_otp import login as otp_login
 import random
 import qrcode
 import base64
+from .forms import PatientCreationForm, DoctorCreationForm, PharmacistCreationForm
+from rest_framework.views import View
+from io import BytesIO
+from django.http import HttpResponse
 
-
+# Create your views here.
 User = get_user_model()
+
 
 ## Common Configuration view
 
@@ -28,7 +33,7 @@ def setup_2fa(request):
         
         token = request.POST.get('token')
 
-        if device.verity_token(token):
+        if device.verify_token(token):
             device.confirmed = True
             device.save()
 
@@ -53,7 +58,7 @@ def setup_2fa(request):
     img = qr.make_image(fill_color='black', back_color='white')
     buffer = BytesIO()
     img.save(buffer, format='PNG')
-    qr_code_image = base64.b64decode(buffer.getValue()).decode()
+    qr_code_image = base64.b64encode(buffer.getvalue()).decode()
 
     context = {
         'qr_code_url': qr_code_url,
@@ -62,7 +67,7 @@ def setup_2fa(request):
         'secret_key': device.key
     }
 
-    return render(request, 'utilisateurs/setup_2fa.html', context)
+    return render(request, 'auth/setup_2fa.html', context)
 
 # 2FA Backup Code
 @login_required
@@ -72,216 +77,175 @@ def backup_codes(request):
         backup_codes = request.user.backup_codes
         if not backup_codes:
             messages.error(request, "Aucun code de sauvegarde disponible")
-        return redirect('setup_2fa')
+            return redirect('setup_2fa')
     
     return render(request, 'backup_codes.html', {'backup_codes': backup_codes})
 
-# Create your views here.
-#######################################
-####### PATIENT VIEW ##################
-#######################################
 
-# Standard Login View
-def login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
+###############################
+# Common Authentification Views
+
+class BaseAuthView(View):
+    #common paramaters define, help selecting role
+    user_type = None
+    template_login = None
+    template_login_2fa = None
+    template_signup = None
+    form_class = None
+    dashboard_url = None
+
+    def get_user_profile_attr(self):
+        return f"{self.user_type}_profile"
+
+    def dispatch(self, request, *args, **kwargs):
+        if hasattr(request.user, self.get_user_profile_attr()):
+            return redirect(self.dash_url)
+        return super().dispatch(request, *args, *kwargs)
+
+# Common Login View
+#@check_account_lock
+class BaseLoginView(BaseAuthView):
+    def get(self, request):
+        return render(request, self.template_login)
+
+    def post(self, request):
+        email = request.POST.get('email')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email, password=password)
 
-        if user is not None:
+        if user is not None and hasattr(user, self.get_user_profile_attr()):
             request.session['2fa_user_id'] = user.id
-            return redirect('login_2fa')
-        else:
-            messages.error(request, "Identifiants incorrects")
-    return render(request, 'utilisateurs/login.html')
+            request.session['user_type'] = self.user_type
+            return redirect(f'{self.user_type}_login_2fa')
 
-# 2FA Login View
-def login_2fa(request):
-    user_id = request.session.get('2fa_user_id')
-    if not user_id:
-        return redirect('login')
-    
-    try:
-        user = User.objects.get(id=user_id)
-        device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+        messages.error(request, "Identifiants incorrects")
+        return render(request, self.template_login)
 
-        if not device:
-            messages.error(request, "Aucun dispositif pour la 2FA")
-            return redirect('login')
+# Common 2FA View
+class BaseLogin2faView(BaseAuthView):
+    def get(self, request):
+        user_id = request.session.get('2fa_user_id')
+        if not user_id or request.session.get('user_type') != self.user_type:
+            return  redirect(f'{self.user_type}_login')
+        return render(request, self.template_login_2fa)
 
-        if request.method == 'POST':
-            token =  request.POST.get('otp_token')
-            backup_code = request.POST.get('backup_codes')
+    def post(self, request):
+        user_id = request.session.get('2fa_user_id')
+        if not user_id or request.session.get('user_type') != self.user_type:
+            return redirect(f'{self.user_type}_login')
 
+        try:
+            user = User.objects.get(id=user_id)
+            device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+
+            token = request.POST.get('otp_token')
             if token and device.verify_token(token):
                 auth_login(request, user)
                 otp_login(request, device)
                 del request.session['2fa_user_id']
-                messages.success(request, "Connexion réussie")
-                return redirect('home')
-            elif backup_code and user.backup_codes:
-                if backup_code in user.backup_codes:
-                    user.backup_codes.remove(backup_code)
-                    user.save()
-                    auth_login(request, user)
-                    otp_login(request, device)
-                    del request.session['2fa_user_id']
-                    messages.error(request, "Connexion réussie avec code de sauvegarde")
-                    return redirect('home')
-                else:
-                    messages.error(request, "Code de sauvegarde incorrect")
-            else :
-                messages.error(request, "Code 2fa incorrect")
-    except User.DoesNotExist:
-        messages.error(request, "Utilisateur introuvable")
-        return redirect('login')
-    
-    return render(request, 'utilisateurs/login_2fa.html')
+                del request.session['user_type']
+                return redirect(self.dash_url)
 
-# Registration class
-def signup(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+            messages.error(request, "Code 2fa invalide")
+            return render(request, self.template_login_2fa)
 
+        except User.DoesNotExist:
+            messages.error(request, "Utilisateur non existant")
+            return redirect(f'{self.user_type}_login')
+
+# Common Sign Up View
+class BaseSignupView(BaseAuthView):
+    def get(self, request):
+        form = self.form_class()
+        return render(request, self.template_signup, {'form':form})
+
+    def post(self, request):
+        form = self.form_class(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, "Inscription réussie")
-            return redirect('setup_2fa')
-    else:
-        form = UserCreationForm()
+            try:
+                user = form.save()
 
-    return render(request, 'utilisateurs/signup.html', {'form': form})
+                auth_login(request, user)
+                messages.success(request, "Inscription Réussie")
+                return redirect('setup_2fa')
+            except Exception as e:
+                messages.error(request, f"Erreur lors de l'inscription: {str(e)}")
+                
+        return render(request, self.template_signup, {'form':form})
+
+
+
+#######################################
+####### PATIENT VIEW ##################
+#######################################
+class PatientLoginView(BaseLoginView):
+    user_type = 'patient'
+    template_login = 'patients/login.html'
+    dash_url = 'patient_dash'
+
+class PatientLogin2faView(BaseLogin2faView):
+    user_type = 'patient'
+    template_login_2fa = 'patients/login_2fa.html'
+    dash_url = 'patient_dash'
+
+class PatientSignUpView(BaseSignupView):
+    user_type = 'patient'
+    template_signup = 'patients/signup.html'
+    form_class = PatientCreationForm
+    dash_url = 'patient_dash'
+
+@login_required
+def patient_dash(request):
+    if not hasattr(request.user, 'patient_profile'):
+        return redirect('home')
+    return render(request, 'patient/dashboard.html')
 
 
 ########################################
 ####### DOCTOR VIEW  ###################
 #######              ###################
+class DoctorLoginView(BaseLoginView):
+    user_type = 'doctor'
+    template_login = 'doctor/login.html'
+    dash_url = 'doctor_dash'
 
-# Login View
-def doctor_login(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        user = authenticate(request, email=email, password=password)
+class DoctorLogin2faView(BaseLogin2faView):
+    user_type = 'doctor'
+    template_login_2fa = 'doctor/login_2fa.html'
+    dash_url = 'doctor_dash'
 
-        if user is not None and hassattr(user, 'doctor_profile'):
-            request.session['2fa_user_id'] = user.id
-            return redirect('doctor_login_2fa')
-        else:
-            messages.error(reqest,'Identifiants incorrects')
-    return render(request, 'doctors/login.html')
+class DoctorSignUpView(BaseSignupView):
+    user_type = 'doctor'
+    template_signup = 'doctor/signup.html'
+    form_class = DoctorCreationForm
+    dash_url = 'doctor_dash'
 
-# 2fa View
-def doctor_login_2fa(request):
-    user_id = request.sesssion.get('2fa_user_id')
-    if not user_id:
-        return redirect('doctor_login')
-
-    try:
-        user = User.objects.get(id=user_id)
-        if not hasattr(user, 'doctor_profile'):
-            messages.error(request, "No access")
-            return redirect('doctor_login')
-
-        device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
-
-        if request.method == 'POST':
-            token = request.POST.get('otp_token')
-            if token and device.verify_token(token):
-                auth_login(request, user)
-                otp_login(request, device)
-                del request.session['2fa_user_id']
-                return redirect('dash')
-            else:
-                messages.error(request, "Code 2fa incorrect")
-    except User.DoesNotExist:
-        messages.error(request, "utilisateur introuvable")
-
-    return render(request, 'doctors/login_2fa.html')
-
-# Signup View
-def doctor_signup(request):
-    if request.method == 'POST':
-        form = DoctorCreationForm(request.POST)
-        if form.is_valid():
-            doctor = form.save()
-            auth_login(request, doctor.user)
-            messages.success(request, "Inscription du médecin réussie")
-            return redirect('setup_2fa')
-    else:
-        form = DoctorCreationForm()
-    
-    return render(request, 'doctors/signup.html', {'form':form})
-
-# Dashboard redirection view
 @login_required
 def doctor_dash(request):
     if not hasattr(request.user, 'doctor_profile'):
         return redirect('home')
-    return render(request, 'doctors/dashboard.html')
-    
+    return render(request, 'doctor/dashboard.html')
+
+
 ########################################
 ####### PHARMACIST VIEW ################
 #######                 ################
+class PharmacistLoginView(BaseLoginView):
+    user_type = 'pharmacist'
+    template_login = 'auth/login.html'
+    dash_url = 'pharmacist_dash'
 
-# Login View
-def pharmacist_login(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        user = authenticate(request, email=email, password=password)
+class PharmacistLogin2faView(BaseLogin2faView):
+    user_type = 'pharmacist'
+    template_login_2fa = 'auth/login_2fa.html'
+    dash_url = 'pharmacist_dash'
 
-        if user is not None and hasattr(user, 'pharmacist_profile'):
-            request.session['2fa_user_id'] = user.id
-            return redirect('pharmacist_login_2fa')
-        else:
-            messages.error(request, 'Identifiants incorrects')
-    return render(request, 'pharmacist/login.html')
+class PharmacistSignUpView(BaseSignupView):
+    user_type = 'pharmacist'
+    template_signup = 'auth/signup.html'
+    form_class = PharmacistCreationForm
+    dash_url = 'pharmacist_dash'
 
-# 2fa View
-def pharmacist_login_2fa(request):
-    user_id = request.sesssion.get('2fa_user_id')
-    if not user_id:
-        return redirect('pharmacist_login')
-
-    try:
-        user = User.objects.get(id=user_id)
-        if not hasattr(user, 'pharmacist_profile'):
-            messages.error(request, "No access")
-            return redirect('pharmacist_login')
-
-        device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
-
-        if request.method == 'POST':
-            token = request.POST.get('otp_token')
-            if token and device.verify_token(token):
-                auth_login(request, user)
-                otp_login(request, device)
-                del request.session['2fa_user_id']
-                return redirect('dash')
-            else:
-                messages.error(request, "Code 2fa incorrect")
-    except User.DoesNotExist:
-        messages.error(request, "utilisateur introuvable")
-
-    return render(request, 'pharmacist/login_2fa.html')
-
-# Signup view
-def pharmacist_signup(request):
-    if request.method == 'POST':
-        form = PharmacistCreationForm(request.POST)
-        if form.is_valid():
-            pharmacist = form.save()
-            auth_login(request, pharmacist.user)
-            messages.success(request, "Inscription du pharmacien réussie")
-            return redirect('setup_2fa')
-    else:
-        form = PharmacistCreationForm()
-
-    return render(resquest, 'pharmacist/signup.html', {'form':form})
-
-# Dashboard redirection view
 @login_required
 def pharmacist_dash(request):
     if not hasattr(request.user, 'pharmacist_profile'):
