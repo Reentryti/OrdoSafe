@@ -9,10 +9,15 @@ from django_otp import login as otp_login
 import random
 import qrcode
 import base64
-from .forms import PatientCreationForm, DoctorCreationForm, PharmacistCreationForm
+from .forms import PatientCreationForm, DoctorCreationForm, PharmacistCreationForm, Reset2FAForm
 from rest_framework.views import View
 from io import BytesIO
 from django.http import HttpResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import FormView
+from django.urls import reverse_lazy
+
+
 
 # Create your views here.
 User = get_user_model()
@@ -82,6 +87,7 @@ def backup_codes(request):
     return render(request, 'auth/backup_codes.html', {'backup_codes': backup_codes})
 
 
+
 ###############################
 # Common Authentification Views
 
@@ -98,8 +104,8 @@ class BaseAuthView(View):
         return f"{self.user_type}_profile"
 
     def dispatch(self, request, *args, **kwargs):
-        if hasattr(request.user, self.get_user_profile_attr()):
-            return redirect(self.dash_url)
+        if request.user.is_authenticated and hasattr(request.user, self.get_user_profile_attr()):
+            return redirect(self.dashboard_url)
         return super().dispatch(request, *args, *kwargs)
 
 # Common Login View
@@ -112,6 +118,7 @@ class BaseLoginView(BaseAuthView):
         email = request.POST.get('email')
         password = request.POST.get('password')
         user = authenticate(request, email=email, password=password)
+        print(f"Utilisateur authentifié: {user}")
 
         if user is not None and hasattr(user, self.get_user_profile_attr()):
             request.session['2fa_user_id'] = user.id
@@ -144,7 +151,7 @@ class BaseLogin2faView(BaseAuthView):
                 otp_login(request, device)
                 del request.session['2fa_user_id']
                 del request.session['user_type']
-                return redirect(self.dash_url)
+                return redirect(self.dashboard_url)
 
             messages.error(request, "Code 2fa invalide")
             return render(request, self.template_login_2fa)
@@ -174,6 +181,34 @@ class BaseSignupView(BaseAuthView):
         return render(request, self.template_signup, {'form':form})
 
 
+class Reset2FAView(LoginRequiredMixin, FormView):
+    template_name = 'auth/reset_2fa.html'
+    form_class = Reset2FAForm
+    success_url = reverse_lazy('setup_2fa')
+
+    def form_valid(self, form):
+        user = self.request.user
+        
+        # 1. Supprimer les devices existants
+        TOTPDevice.objects.filter(user=user).delete()
+        
+        # 2. Envoyer un email de confirmation
+        send_mail(
+            "Réinitialisation de votre 2FA",
+            f"Votre authentification à deux facteurs a été réinitialisée.",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+        
+        # 3. Déconnecter l'utilisateur
+        auth_logout(self.request)
+        
+        messages.success(
+            self.request,
+            "La 2FA a été réinitialisée. Veuillez vous reconnecter et configurer une nouvelle authentification."
+        )
+        return super().form_valid(form)
 
 #######################################
 ####### PATIENT VIEW ##################
@@ -181,18 +216,18 @@ class BaseSignupView(BaseAuthView):
 class PatientLoginView(BaseLoginView):
     user_type = 'patient'
     template_login = 'patients/login.html'
-    dash_url = 'patient_dash'
+    dashboard_url = 'patient_dash'
 
 class PatientLogin2faView(BaseLogin2faView):
     user_type = 'patient'
-    template_login_2fa = 'patients/login_2fa.html'
-    dash_url = 'patient_dash'
+    template_login_2fa = 'auth/login_2fa.html'
+    dashboard_url = 'patient_dash'
 
 class PatientSignUpView(BaseSignupView):
     user_type = 'patient'
     template_signup = 'patients/signup.html'
     form_class = PatientCreationForm
-    dash_url = 'patient_dash'
+    dashboard_url = 'patient_dash'
 
 @login_required
 def patient_dash(request):
@@ -207,18 +242,18 @@ def patient_dash(request):
 class DoctorLoginView(BaseLoginView):
     user_type = 'doctor'
     template_login = 'doctor/login.html'
-    dash_url = 'doctor_dash'
+    dashboard_url = 'doctor_dash'
 
 class DoctorLogin2faView(BaseLogin2faView):
     user_type = 'doctor'
     template_login_2fa = 'doctor/login_2fa.html'
-    dash_url = 'doctor_dash'
+    dashboard_url = 'doctor_dash'
 
 class DoctorSignUpView(BaseSignupView):
     user_type = 'doctor'
     template_signup = 'doctor/signup.html'
     form_class = DoctorCreationForm
-    dash_url = 'doctor_dash'
+    dashboard_url = 'doctor_dash'
 
 @login_required
 def doctor_dash(request):
@@ -233,18 +268,18 @@ def doctor_dash(request):
 class PharmacistLoginView(BaseLoginView):
     user_type = 'pharmacist'
     template_login = 'auth/login.html'
-    dash_url = 'pharmacist_dash'
+    dashboard_url = 'pharmacist_dash'
 
 class PharmacistLogin2faView(BaseLogin2faView):
     user_type = 'pharmacist'
     template_login_2fa = 'auth/login_2fa.html'
-    dash_url = 'pharmacist_dash'
+    dashboard_url = 'pharmacist_dash'
 
 class PharmacistSignUpView(BaseSignupView):
     user_type = 'pharmacist'
     template_signup = 'auth/signup.html'
     form_class = PharmacistCreationForm
-    dash_url = 'pharmacist_dash'
+    dashboard_url = 'pharmacist_dash'
 
 @login_required
 def pharmacist_dash(request):

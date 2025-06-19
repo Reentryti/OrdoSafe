@@ -1,45 +1,53 @@
-{% extends "patients/base.html" %}
+{% extends "base_auth.html" %}
 
-{% block content %}
-<div class="container mt-5">
+{% block title %}Vérification 2FA{% endblock %}
+{% block header_class %}primary{% endblock %}
+
+{% block auth_title %}Vérification en deux étapes{% endblock %}
+
+{% block auth_content %}
+<div class="container">
   <div class="row justify-content-center">
     <div class="col-md-6">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="mb-0">Vérification en deux étapes</h3>
-        </div>
-        <div class="card-body">
-          <p class="text-center">
-            <i class="fas fa-mobile-alt fa-3x mb-3"></i><br>
-            Entrez le code à 6 chiffres de votre application d'authentification
-          </p>
-          
-          <form method="post">
-            {% csrf_token %}
-            
-            {% if form.errors %}
-              <div class="alert alert-danger">
-                Code incorrect. Veuillez réessayer.
-              </div>
-            {% endif %}
-            
-            <div class="form-group">
-              <input type="text" 
-                     name="otp_token" 
-                     class="form-control text-center" 
-                     placeholder="123456" 
-                     autofocus
-                     required>
+      <form method="post">
+        {% csrf_token %}
+        
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mb-4">
+              {{ message }}
             </div>
-            
-            <button type="submit" class="btn btn-primary btn-block">Vérifier</button>
-            
-            <div class="text-center mt-3">
-              <a href="#" class="text-muted">Problème avec l'authentification ?</a>
-            </div>
-          </form>
+          {% endfor %}
+        {% endif %}
+        
+        <div class="text-center mb-4">
+          <i class="fas fa-mobile-alt fa-4x text-primary mb-3"></i>
+          <h4>Entrez votre code de vérification</h4>
+          <p class="text-muted">Ouvrez votre application d'authentification et entrez le code à 6 chiffres</p>
         </div>
-      </div>
+        
+        <div class="mb-3">
+          <input type="text" 
+                 name="otp_token" 
+                 class="form-control form-control-lg text-center" 
+                 placeholder="••••••" 
+                 autofocus
+                 required
+                 maxlength="6"
+                 pattern="\d{6}"
+                 inputmode="numeric">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+          <i class="fas fa-check-circle me-2"></i> Vérifier
+        </button>
+        
+        <div class="text-center">
+          <a href="{% url 'reset_2fa' %}" class="text-muted small">
+            <i class="fas fa-question-circle me-1"></i> Problème avec l'authentification ?
+          </a>
+        </div>
+      </form>
     </div>
   </div>
 </div>

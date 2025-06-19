@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 import datetime
 from phonenumber_field.formfields import PhoneNumberField
 from django.db import transaction
+from django.forms import PasswordInput
+
 
 
 # Forms Control (Patient input)
@@ -320,3 +322,23 @@ class PharmacistCreationForm(UserCreationForm):
             pharmacy_name= self.cleaned_data['pharmacy_name']
         )
         return pharmacist
+    
+
+class Reset2FAForm(forms.Form):
+    password = forms.CharField(
+        label="Confirmez avec votre mot de passe",
+        widget=PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Votre mot de passe actuel'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if not self.user.check_password(password):
+            raise forms.ValidationError("Mot de passe incorrect")
+        return password
