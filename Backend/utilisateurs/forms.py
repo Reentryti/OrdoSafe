@@ -124,6 +124,7 @@ class PatientCreationForm(UserCreationForm):
                 email= self.cleaned_data['email'],
                 password= self.cleaned_data['password1'],
                 date_birth= self.cleaned_data['date_birth'])
+
                 user.first_name= self.cleaned_data['first_name']
                 user.last_name= self.cleaned_data['last_name']
                 user.phone_number= self.cleaned_data['phone_number']
@@ -201,9 +202,9 @@ class DoctorCreationForm(UserCreationForm):
     )
 
     class Meta:
-        model = Doctor
+        model = BasicUser
         fields = [
-            'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'licence_number', 'specialisation', 'password1', 'password2'
+            'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'password1', 'password2'
         ]
     
     def clean_email(self):
@@ -220,18 +221,19 @@ class DoctorCreationForm(UserCreationForm):
                 email= self.cleaned_data['email'],
                 password= self.cleaned_data['password1'],
                 date_birth= self.cleaned_data['date_birth'])
+
                 user.first_name= self.cleaned_data['first_name'],
                 user.last_name= self.cleaned_data['last_name'],
-                    
                 user.phone_number= self.cleaned_data['phone_number'],
                 user.two_factor_method= self.cleaned_data['two_factor_method']
                 user.save()
+
                 doctor = Doctor.objects.create(
                     user=user,
                     licence_number= self.cleaned_data['licence_number'],
                     specialisation= self.cleaned_data['specialisation']
                 )
-                return doctor
+                return user
         except Exception as e:
             print(f"Erreur lors de l'inscription: {e}")
             raise e
@@ -294,9 +296,9 @@ class PharmacistCreationForm(UserCreationForm):
     )
 
     class Meta:
-        model = Pharmacist
+        model = BasicUser
         fields = [
-            'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'licence_number', 'pharmacy_name', 'password1', 'password2'
+            'first_name', 'last_name', 'date_birth', 'email', 'phone_number', 'two_factor_method', 'password1', 'password2'
         ]
     
     def clean_email(self):
@@ -306,24 +308,30 @@ class PharmacistCreationForm(UserCreationForm):
         return email
 
     def save(self, commit=True):
-        user = BasicUser.objects.create_user(
-            #user_type= 'pharmacist',
-            email= self.cleaned_data['email'],
-            password= self.cleaned_data['password1'],
-            first_name= self.cleaned_data['first_name'],
-            last_name= self.cleaned_data['last_name'],
-            date_birth= self.cleaned_data['date_birth'],
-            phone_number= self.cleaned_data['phone_number'],
-            two_factor_method= self.cleaned_data['two_factor_method']
-        )
-        pharmacist = Pharmacist.objects.create(
-            user=user, 
-            licence_number= self.cleaned_data['licence_number'],
-            pharmacy_name= self.cleaned_data['pharmacy_name']
-        )
-        return pharmacist
-    
+        try:
+            with transaction.atomic:
+                user = BasicUser.objects.create_user(
+                    #user_type= 'pharmacist',
+                    email= self.cleaned_data['email'],
+                    password= self.cleaned_data['password1'],
+                    date_birth= self.cleaned_data['date_birth'])
 
+                user.first_name= self.cleaned_data['first_name'],
+                user.last_name= self.cleaned_data['last_name'],
+                user.phone_number= self.cleaned_data['phone_number'],
+                user.two_factor_method= self.cleaned_data['two_factor_method']
+                
+                pharmacist = Pharmacist.objects.create(
+                    user=user, 
+                    licence_number= self.cleaned_data['licence_number'],
+                    pharmacy_name= self.cleaned_data['pharmacy_name']
+                )
+                return pharmacist
+        except Exception as e:
+            print(f"Erreur lors de l'inscription: {e}")
+            raise e
+    
+# Form Reset Password
 class Reset2FAForm(forms.Form):
     password = forms.CharField(
         label="Confirmez avec votre mot de passe",

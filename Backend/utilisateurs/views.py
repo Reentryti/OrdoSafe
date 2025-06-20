@@ -180,7 +180,7 @@ class BaseSignupView(BaseAuthView):
                 
         return render(request, self.template_signup, {'form':form})
 
-
+# Common Reset Password View
 class Reset2FAView(LoginRequiredMixin, FormView):
     template_name = 'auth/reset_2fa.html'
     form_class = Reset2FAForm
@@ -241,17 +241,17 @@ def patient_dash(request):
 #######              ###################
 class DoctorLoginView(BaseLoginView):
     user_type = 'doctor'
-    template_login = 'doctor/login.html'
+    template_login = 'doctors/login.html'
     dashboard_url = 'doctor_dash'
 
 class DoctorLogin2faView(BaseLogin2faView):
     user_type = 'doctor'
-    template_login_2fa = 'doctor/login_2fa.html'
+    template_login_2fa = 'auth/login_2fa.html'
     dashboard_url = 'doctor_dash'
 
 class DoctorSignUpView(BaseSignupView):
     user_type = 'doctor'
-    template_signup = 'doctor/signup.html'
+    template_signup = 'doctors/signup.html'
     form_class = DoctorCreationForm
     dashboard_url = 'doctor_dash'
 
@@ -259,7 +259,7 @@ class DoctorSignUpView(BaseSignupView):
 def doctor_dash(request):
     if not hasattr(request.user, 'doctor_profile'):
         return redirect('home')
-    return render(request, 'doctor/dashboard.html')
+    return render(request, 'doctors/dash.html')
 
 
 ########################################
