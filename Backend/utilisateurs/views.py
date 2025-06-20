@@ -19,6 +19,8 @@ from django.urls import reverse_lazy
 
 
 
+from audit.utils import log_security_event
+
 # Create your views here.
 User = get_user_model()
 
