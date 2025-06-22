@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post" id="ordonnance-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    
+    <div class="card mb-4">
+        <div class="card-header">Médicaments</div>
+        <div class="card-body">
+            <div id="medicaments-container">
+                <!-- Les médicaments ajoutés dynamiquement -->
+            </div>
+            <button type="button" class="btn btn-sm btn-primary mt-3" id="add-medicament">
+                <i class="fas fa-plus"></i> Ajouter un médicament
+            </button>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('medicaments-container');
+    const addButton = document.getElementById('add-medicament');
+    const form = document.getElementById('ordonnance-form');
+    const medicamentsField = document.querySelector('[name="medicaments"]');
+    
+    // Charger les médicaments existants
+    let medicaments = medicamentsField.value ? JSON.parse(medicamentsField.value) : [];
+    
+    function renderMedicaments() {
+        container.innerHTML = '';
+        medicaments.forEach((med, index) => {
+            const medElement = document.createElement('div');
+            medElement.className = 'medicament-item mb-3 p-3 border';
+            medElement.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" value="${med.nom || ''}" 
+                               placeholder="Nom du médicament" data-field="nom">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control" value="${med.posologie || ''}" 
+                               placeholder="Posologie" data-field="posologie">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" value="${med.duree || ''}" 
+                               placeholder="Durée (jours)" data-field="duree">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" value="${med.quantite || ''}" 
+                               placeholder="Quantité" data-field="quantite">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-sm btn-danger remove-med" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(medElement);
+        });
+        updateMedicamentsField();
+    }
+    
+    function updateMedicamentsField() {
+        medicamentsField.value = JSON.stringify(medicaments);
+    }
+    
+    addButton.addEventListener('click', function() {
+        medicaments.push({
+            nom: '',
+            posologie: '',
+            duree: '',
+            quantite: ''
+        });
+        renderMedicaments();
+    });
+    
+    container.addEventListener('input', function(e) {
+        const input = e.target;
+        if (input.matches('[data-field]')) {
+            const index = input.closest('.medicament-item').querySelector('.remove-med').dataset.index;
+            const field = input.dataset.field;
+            medicaments[index][field] = input.value;
+            updateMedicamentsField();
+        }
+    });
+    
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-med')) {
+            const index = parseInt(e.target.dataset.index);
+            medicaments.splice(index, 1);
+            renderMedicaments();
+        }
+    });
+    
+    // Initial render
+    renderMedicaments();
+});
+</script>
+{% endblock %}

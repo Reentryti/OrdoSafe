@@ -35,6 +35,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'utilisateurs', #integrate users application
+    'ordonnance', #integrate prescription application
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
