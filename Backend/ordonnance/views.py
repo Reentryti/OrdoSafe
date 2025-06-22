@@ -1,11 +1,28 @@
-from rest_framework import viewsets
-from .models import Ordonnance, Medicament
-from .serializers import OrdonnanceSerializer, MedicamentSerializer
+from django.views.generic import CreateView, UpdateView
+from django.urls import reverse_lazy
+from .forms import OrdonnanceForm
+import json
 
-class OrdonnanceViewSet(viewsets.ModelViewSet):
-    queryset = Ordonnance.objects.all()
-    serializer_class = OrdonnanceSerializer
+class OrdonnanceCreateView(CreateView):
+    model = Ordonnance
+    form_class = OrdonnanceForm
+    template_name = 'ordonnance/ordonnance_form.html'
+    success_url = reverse_lazy('ordonnance_list')
 
-class MedicamentViewSet(viewsets.ModelViewSet):
-    queryset = Medicament.objects.all()
-    serializer_class = MedicamentSerializer
+    def form_valid(self, form):
+        
+        medicaments = json.loads(self.request.POST.get('medicaments', '[]'))
+        form.instance.medicaments = medicaments
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+class OrdonnanceUpdateView(UpdateView):
+    model = Ordonnance
+    form_class = OrdonnanceForm
+    template_name = 'ordonnance/ordonnance_form.html'
+    success_url = reverse_lazy('ordonnance_list')
+
+    def form_valid(self, form):
+        medicaments = json.loads(self.request.POST.get('medicaments', '[]'))
+        form.instance.medicaments = medicaments
+        return super().form_valid(form)
