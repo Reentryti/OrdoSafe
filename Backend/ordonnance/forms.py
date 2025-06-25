@@ -25,10 +25,10 @@ class OrdonnanceForm(forms.ModelForm):
 
     class Meta:
         model = Ordonnance
-        fields = ['patient', 'medecin', 'notes', 'medicaments']
+        fields = ['patient', 'doctor', 'notes', 'medicaments']
         widgets = {
             'patient': forms.Select(attrs={'class': 'form-control'}),
-            'medecin': forms.Select(attrs={'class': 'form-control'}),
+            'doctor': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 

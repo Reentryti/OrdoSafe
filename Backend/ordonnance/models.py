@@ -48,7 +48,7 @@ class Ordonnance(models.Model):
                 'id': self.doctor.id,
                 'nom': self.doctor.user.get_full_name()
             },
-            'medicaments': self.medicaments  # Chiffrer aussi si nécessaire
+            'medicaments': self.medicaments  # Chiffrement en would
         }
         super().save(*args, **kwargs)
     def __str__(self):

@@ -4,7 +4,7 @@ from .views import (
     PatientSignUpView, PatientLoginView, PatientLogin2faView,
     DoctorSignUpView, DoctorLoginView, DoctorLogin2faView,
     PharmacistSignUpView, PharmacistLoginView, PharmacistLogin2faView,
-    Reset2FAView
+    Reset2FAView, LogoutView
 )
 
 urlpatterns = [
@@ -12,7 +12,8 @@ urlpatterns = [
 
     path('account/2fa/setup/', views.setup_2fa, name='setup_2fa'),
     path('account/2fa/backup-codes/', views.backup_codes, name='backup_codes'),
-    path('account/2fa/reset/', Reset2FAView.as_view, name='reset_2fa'),
+    path('account/2fa/reset/', Reset2FAView.as_view(), name='reset_2fa'),
+    path('account/logout/', LogoutView.as_view(), name='logout'),
 
     path('patient/login/', PatientLoginView.as_view(), name='patient_login'),
     path('patient/login/2fa/', PatientLogin2faView.as_view(), name='patient_login_2fa'),

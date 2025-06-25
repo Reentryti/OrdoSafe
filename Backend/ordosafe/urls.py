@@ -27,4 +27,5 @@ urlpatterns = [
     # Include the URLs for Django Allauth
     # This is used for user authentication, registration, and social account management
     #path('accounts/', include('allauth.urls')), 
+    path('ordonnance/', include('ordonnance.urls')),
 ]

@@ -16,6 +16,7 @@ from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import FormView
 from django.urls import reverse_lazy
+from django.contrib.auth import logout as auth_logout
 
 
 
@@ -110,6 +111,7 @@ class BaseAuthView(View):
             return redirect(self.dashboard_url)
         return super().dispatch(request, *args, *kwargs)
 
+
 # Common Login View
 #@check_account_lock
 class BaseLoginView(BaseAuthView):
@@ -122,7 +124,7 @@ class BaseLoginView(BaseAuthView):
         user = authenticate(request, email=email, password=password)
         print(f"Utilisateur authentifié: {user}")
 
-        if user is not None and hasattr(user, self.get_user_profile_attr()):
+        if user is not None and self.has_profile(user):
             request.session['2fa_user_id'] = user.id
             request.session['user_type'] = self.user_type
             return redirect(f'{self.user_type}_login_2fa')
@@ -212,6 +214,23 @@ class Reset2FAView(LoginRequiredMixin, FormView):
         )
         return super().form_valid(form)
 
+#Common Logout view
+class LogoutView(LoginRequiredMixin, View):
+    def get(self, request):
+        
+        auth_logout(request)
+        
+        # Session clear
+        if '2fa_user_id' in request.session:
+            del request.session['2fa_user_id']
+        if 'user_type' in request.session:
+            del request.session['user_type']
+        
+        messages.success(request, "Vous avez été déconnecté avec succès.")
+        
+        # Redirection
+        return redirect('home')  
+
 #######################################
 ####### PATIENT VIEW ##################
 #######################################
@@ -233,8 +252,9 @@ class PatientSignUpView(BaseSignupView):
 
 @login_required
 def patient_dash(request):
-    if not hasattr(request.user, 'patient_profile'):
-        return redirect('home')
+    if not hasattr(request.user, 'patient_profile') or request.user.patient is None:
+        messages.error(request, "Acces non autorisé")
+        return redirect('patient_login')
     return render(request, 'patients/dash.html')
 
 
@@ -260,7 +280,8 @@ class DoctorSignUpView(BaseSignupView):
 @login_required
 def doctor_dash(request):
     if not hasattr(request.user, 'doctor_profile'):
-        return redirect('home')
+        messages.error(request, "Acces non autorisé")
+        return redirect('doctor_login')
     return render(request, 'doctors/dash.html')
 
 

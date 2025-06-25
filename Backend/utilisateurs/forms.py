@@ -222,9 +222,9 @@ class DoctorCreationForm(UserCreationForm):
                 password= self.cleaned_data['password1'],
                 date_birth= self.cleaned_data['date_birth'])
 
-                user.first_name= self.cleaned_data['first_name'],
-                user.last_name= self.cleaned_data['last_name'],
-                user.phone_number= self.cleaned_data['phone_number'],
+                user.first_name= self.cleaned_data['first_name']
+                user.last_name= self.cleaned_data['last_name']
+                user.phone_number= self.cleaned_data['phone_number']
                 user.two_factor_method= self.cleaned_data['two_factor_method']
                 user.save()
 
@@ -317,8 +317,8 @@ class PharmacistCreationForm(UserCreationForm):
                     date_birth= self.cleaned_data['date_birth'])
 
                 user.first_name= self.cleaned_data['first_name'],
-                user.last_name= self.cleaned_data['last_name'],
-                user.phone_number= self.cleaned_data['phone_number'],
+                user.last_name= self.cleaned_data['last_name']
+                user.phone_number= self.cleaned_data['phone_number']
                 user.two_factor_method= self.cleaned_data['two_factor_method']
                 
                 pharmacist = Pharmacist.objects.create(

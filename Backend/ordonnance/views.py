@@ -1,14 +1,15 @@
-from django.views.generic import CreateView, UpdateView
-from django.urls import reverse_lazy
+from django.views.generic import CreateView, UpdateView, DeleteView, DetailView, ListView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import OrdonnanceForm
 import json
 from audit.utils import log_security_event
+from .models import Ordonnance
 
 # Ordonnance Creation view
 class OrdonnanceCreateView(CreateView, LoginRequiredMixin):
     model = Ordonnance
     form_class = OrdonnanceForm
-    template_name = 'ordonnance/ordonnance_form.html'
+    template_name = 'ordonnance_form.html'
     #success_url = reverse_lazy('ordonnance_list')
 
     def form_valid(self, form):    
@@ -44,7 +45,7 @@ class OrdonnanceCreateView(CreateView, LoginRequiredMixin):
 class OrdonnanceUpdateView(UpdateView, LoginRequiredMixin):
     model = Ordonnance
     form_class = OrdonnanceForm
-    template_name = 'ordonnance/ordonnance_form.html'
+    template_name = 'ordonnance_form.html'
 
 
     def get_form_kwargs(self):
@@ -72,9 +73,9 @@ class OrdonnanceUpdateView(UpdateView, LoginRequiredMixin):
     
 
 # Ordonnance Update View
-class OrdonnanceDeleteView(LoginRequiredMixin, DeleteView):
+class OrdonnanceDeleteView(DeleteView, LoginRequiredMixin):
     model = Ordonnance
-    template_name = 'ordonnance/delete.html'
+    template_name = 'delete.html'
 
     def delete(self, request, *args, **kwargs):
         ordonnance = self.get_object()
@@ -153,7 +154,7 @@ class OrdonnanceSignView(LoginRequiredMixin, DetailView):
 # Ordonnance List View
 class OrdonnanceListView(LoginRequiredMixin, ListView):
     model = Ordonnance
-    template_name = 'ordonnance/list.html'
+    template_name = 'list.html'
     context_object_name = 'ordonnances'
     paginate_by = 10
 
