@@ -1,0 +1,227 @@
+{% extends "base.html" %}  
+
+{% block title %}Tableau de Bord Pharmacien - OrdoSafe{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-prescription-bottle-alt me-2 text-pharmacien"></i>
+            Tableau de Bord Pharmacien
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-pharmacien" data-bs-toggle="modal" data-bs-target="#scanModal">
+                    <i class="fas fa-qrcode me-1"></i> Scanner
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-pharmacien mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Ordonnances en attente</h6>
+                            <h2 class="mb-0">12</h2>
+                        </div>
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Validées aujourd'hui</h6>
+                            <h2 class="mb-0">8</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Signalements</h6>
+                            <h2 class="mb-0">2</h2>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Médicaments en rupture</h6>
+                            <h2 class="mb-0">3</h2>
+                        </div>
+                        <i class="fas fa-pills fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Ordonnances récentes -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-pharmacien text-white">
+                    <i class="fas fa-list-ul me-2"></i>
+                    Dernières Ordonnances
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Patient</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>ORD-78945</td>
+                                    <td>Moussa Diallo</td>
+                                    <td>20/06/2023</td>
+                                    <td><span class="badge bg-warning">En attente</span></td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-outline-pharmacien">
+                                            <i class="fas fa-eye me-1"></i> Voir
+                                        </a>
+                                    </td>
+                                </tr>
+                                <!-- Ajoutez d'autres lignes ici -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{% url 'pharmacien:ordonnances' %}" class="btn btn-pharmacien mt-3">
+                        <i class="fas fa-list me-1"></i> Voir toutes les ordonnances
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-pharmacien text-white">
+                    <i class="fas fa-bell me-2"></i>
+                    Alertes
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Doliprane 1000</strong> en rupture de stock
+                    </div>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-skull-crossbones me-2"></i>
+                        Ordonnance <strong>#ORD-12345</strong> signalée
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-header bg-pharmacien text-white">
+                    <i class="fas fa-bolt me-2"></i>
+                    Actions Rapides
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-pharmacien">
+                            <i class="fas fa-search me-2"></i> Rechercher une ordonnance
+                        </button>
+                        <button class="btn btn-outline-pharmacien">
+                            <i class="fas fa-file-import me-2"></i> Importer une ordonnance
+                        </button>
+                        <button class="btn btn-outline-pharmacien">
+                            <i class="fas fa-user-clock me-2"></i> Patients en attente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Modal -->
+<div class="modal fade" id="scanModal" tabindex="-1" aria-labelledby="scanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-pharmacien text-white">
+                <h5 class="modal-title" id="scanModalLabel">
+                    <i class="fas fa-qrcode me-2"></i> Scanner une Ordonnance
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="scanner-container" class="mb-3" style="width: 100%; height: 300px; background: #eee;"></div>
+                <p class="text-muted">Positionnez le QR code dans le cadre pour scanner</p>
+                <button class="btn btn-pharmacien" id="startScanner">
+                    <i class="fas fa-camera me-2"></i> Démarrer le Scanner
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles spécifiques -->
+<style>
+    .bg-pharmacien {
+        background-color: #6a1b9a;
+    }
+    .btn-pharmacien {
+        background-color: #6a1b9a;
+        border-color: #6a1b9a;
+        color: white;
+    }
+    .btn-outline-pharmacien {
+        color: #6a1b9a;
+        border-color: #6a1b9a;
+    }
+    .btn-outline-pharmacien:hover {
+        background-color: #6a1b9a;
+        color: white;
+    }
+    .text-pharmacien {
+        color: #6a1b9a;
+    }
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+</style>
+
+<!-- Script pour le scanner -->
+<script>
+    document.getElementById('startScanner').addEventListener('click', function() {
+        // Implémentation du scanner QR code
+        alert('Fonctionnalité de scanner à implémenter');
+    });
+</script>
+{% endblock %}

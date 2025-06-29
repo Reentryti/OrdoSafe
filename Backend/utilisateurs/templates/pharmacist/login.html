@@ -1,0 +1,61 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Connexion Pharmacien - OrdoSafe{% endblock %}
+
+{% block header_class %}pharmacien{% endblock %}
+
+{% block auth_title %}
+<i class="fas fa-prescription-bottle-alt me-2"></i>Espace Pharmacien
+{% endblock %}
+
+{% block auth_content %}
+<form method="post" novalidate>
+    {% csrf_token %}
+    
+    <!-- Champ Numéro de Licence -->
+    <div class="mb-3">
+        <label for="id_license" class="form-label">Numéro de Licence</label>
+        <div class="input-group">
+            <span class="input-group-text">PH-</span>
+            <input type="text" class="form-control" id="id_license" 
+                   name="license" required pattern="[A-Z]{2}\d{6}"
+                   placeholder="AB123456">
+        </div>
+        <small class="text-muted">Format: 2 lettres + 6 chiffres</small>
+    </div>
+    
+    <!-- Champ Mot de passe -->
+    <div class="mb-3">
+        <label for="id_password" class="form-label">Mot de passe</label>
+        <input type="password" class="form-control" id="id_password" 
+               name="password" required>
+    </div>
+    
+    <!-- Bouton de soumission -->
+    <div class="d-grid gap-2 mt-4">
+        <button type="submit" class="btn btn-pharmacien btn-lg">
+            <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+        </button>
+    </div>
+    
+    <!-- Lien vers l'inscription -->
+    <div class="text-center mt-3">
+        <a href="{% url 'pharmacist_signup' %}" class="text-decoration-none">
+            Créer un compte pharmacien
+        </a>
+    </div>
+</form>
+
+<style>
+    .btn-pharmacien {
+        background-color: #6a1b9a;
+        border: none;
+    }
+    .btn-pharmacien:hover {
+        background-color: #5e1490;
+    }
+    .auth-header.pharmacien {
+        background-color: #6a1b9a;
+    }
+</style>
+{% endblock %}

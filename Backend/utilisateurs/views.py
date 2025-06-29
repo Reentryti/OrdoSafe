@@ -290,17 +290,17 @@ def doctor_dash(request):
 #######                 ################
 class PharmacistLoginView(BaseLoginView):
     user_type = 'pharmacist'
-    template_login = 'auth/login.html'
+    template_login = 'pharmacist/login.html'
     dashboard_url = 'pharmacist_dash'
 
 class PharmacistLogin2faView(BaseLogin2faView):
     user_type = 'pharmacist'
-    template_login_2fa = 'auth/login_2fa.html'
+    template_login_2fa = 'pharmacist/login_2fa.html'
     dashboard_url = 'pharmacist_dash'
 
 class PharmacistSignUpView(BaseSignupView):
     user_type = 'pharmacist'
-    template_signup = 'auth/signup.html'
+    template_signup = 'pharmacist/signup.html'
     form_class = PharmacistCreationForm
     dashboard_url = 'pharmacist_dash'
 

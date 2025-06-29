@@ -1,0 +1,80 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Inscription Pharmacien - OrdoSafe{% endblock %}
+
+{% block header_class %}pharmacien{% endblock %}
+
+{% block auth_title %}
+<i class="fas fa-user-plus me-2"></i>Inscription Pharmacien
+{% endblock %}
+
+{% block auth_content %}
+<form method="post" novalidate>
+    {% csrf_token %}
+    
+    <!-- Informations professionnelles -->
+    <div class="mb-3">
+        <label for="id_license" class="form-label">Numéro de Licence Professionnelle</label>
+        <input type="text" class="form-control" id="id_license" 
+               name="license" required pattern="[A-Z]{2}\d{6}"
+               placeholder="AB123456">
+    </div>
+    
+    <!-- Informations personnelles -->
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="id_first_name" class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="id_first_name" name="first_name" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="id_last_name" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="id_last_name" name="last_name" required>
+        </div>
+    </div>
+    
+    <!-- Coordonnées -->
+    <div class="mb-3">
+        <label for="id_email" class="form-label">Email professionnel</label>
+        <input type="email" class="form-control" id="id_email" name="email" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_pharmacy" class="form-label">Nom de la Pharmacie</label>
+        <input type="text" class="form-control" id="id_pharmacy" name="pharmacy" required>
+    </div>
+    
+    <!-- Mot de passe -->
+    <div class="mb-3">
+        <label for="id_password1" class="form-label">Mot de passe</label>
+        <input type="password" class="form-control" id="id_password1" name="password1" required>
+        <div class="form-text">Minimum 8 caractères avec chiffres et lettres</div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_password2" class="form-label">Confirmation</label>
+        <input type="password" class="form-control" id="id_password2" name="password2" required>
+    </div>
+    
+    <!-- Bouton d'inscription -->
+    <div class="d-grid gap-2 mt-4">
+        <button type="submit" class="btn btn-pharmacien btn-lg">
+            <i class="fas fa-user-check me-2"></i>S'inscrire
+        </button>
+    </div>
+    
+    <!-- Lien vers connexion -->
+    <div class="text-center mt-3">
+        <a href="{% url 'pharmacist_login' %}" class="text-decoration-none">
+            Déjà inscrit ? Se connecter
+        </a>
+    </div>
+</form>
+
+<!-- Style spécifique -->
+<style>
+    .form-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
