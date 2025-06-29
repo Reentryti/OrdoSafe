@@ -308,4 +308,4 @@ class PharmacistSignUpView(BaseSignupView):
 def pharmacist_dash(request):
     if not hasattr(request.user, 'pharmacist_profile'):
         return redirect('home')
-    return render(request, 'pharmacist/dashboard.html')
+    return render(request, 'pharmacist/dash.html')
