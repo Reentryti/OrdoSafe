@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-file-prescription"></i> Ordonnance #{{ ordonnance.id }}
+                </h3>
+                <div>
+                    {% include "ordonnance/partials/_signature_status.html" with ordonnance=ordonnance large=True %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h4 class="mb-0"><i class="fas fa-user-injured"></i> Patient</h4>
+                        </div>
+                        <div class="card-body">
+                            <h5>{{ ordonnance.patient.user.get_full_name }}</h5>
+                            <ul class="list-unstyled">
+                                <li>
+                                    <strong>Date de naissance:</strong> 
+                                    {{ ordonnance.patient.user.date_birth|date:"d/m/Y" }}
+                                </li>
+                                <li>
+                                    <strong>Groupe sanguin:</strong> 
+                                    <span class="badge bg-danger">
+                                        {{ ordonnance.patient.blood_type }}
+                                    </span>
+                                </li>
+                                {% if ordonnance.patient.allergies %}
+                                <li>
+                                    <strong>Allergies:</strong> 
+                                    <span class="text-danger">
+                                        {{ ordonnance.patient.allergies }}
+                                    </span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h4 class="mb-0"><i class="fas fa-user-md"></i> Médecin Prescripteur</h4>
+                        </div>
+                        <div class="card-body">
+                            <h5>Dr. {{ ordonnance.medecin.user.get_full_name }}</h5>
+                            <ul class="list-unstyled">
+                                <li>
+                                    <strong>Spécialité:</strong> 
+                                    {{ ordonnance.medecin.get_specialisation_display }}
+                                </li>
+                                <li>
+                                    <strong>N° Licence:</strong> 
+                                    {{ ordonnance.medecin.licence_number }}
+                                </li>
+                                <li>
+                                    <strong>Contact:</strong> 
+                                    {{ ordonnance.medecin.user.phone_number }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0"><i class="fas fa-pills"></i> Prescription Médicale</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Médicament</th>
+                                    <th>DCI</th>
+                                    <th>Posologie</th>
+                                    <th>Durée</th>
+                                    <th>Quantité</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for med in ordonnance.medicaments %}
+                                <tr>
+                                    <td>{{ med.nom }}</td>
+                                    <td>{{ med.dci }}</td>
+                                    <td>{{ med.posologie }}</td>
+                                    <td>{{ med.duree }} jours</td>
+                                    <td>{{ med.quantite }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            {% if ordonnance.notes %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0"><i class="fas fa-comment-medical"></i> Notes et Instructions</h4>
+                </div>
+                <div class="card-body">
+                    {{ ordonnance.notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card border-secondary">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0"><i class="fas fa-history"></i> Historique</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li>
+                            <strong>Créée le:</strong> 
+                            {{ ordonnance.date_creation|date:"d/m/Y à H:i" }}
+                            par {{ ordonnance.created_by.get_full_name }}
+                        </li>
+                        {% if ordonnance.date_emission %}
+                        <li>
+                            <strong>Signée le:</strong> 
+                            {{ ordonnance.date_emission|date:"d/m/Y à H:i" }}
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'ordonnance_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+                
+                <div>
+                    {% if ordonnance.can_edit %}
+                    <a href="{% url 'ordonnance_update' ordonnance.pk %}" 
+                       class="btn btn-outline-warning">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    {% endif %}
+                    
+                    {% if ordonnance.can_sign %}
+                    <form method="post" action="{% url 'ordonnance_sign' ordonnance.pk %}" 
+                          class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success ms-2">
+                            <i class="fas fa-signature"></i> Signer l'ordonnance
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if ordonnance.can_delete %}
+                    <a href="{% url 'ordonnance_delete' ordonnance.pk %}" 
+                       class="btn btn-outline-danger ms-2">
+                        <i class="fas fa-trash-alt"></i> Supprimer
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
