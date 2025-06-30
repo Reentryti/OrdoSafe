@@ -5,6 +5,10 @@ from phonenumber_field.modelfields import PhoneNumberField
 from cryptography.fernet import Fernet
 from django.utils import timezone
 from datetime import timedelta
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from .fields import EncryptedBinaryField
+
 
 # Create your models here.
 
@@ -107,6 +111,22 @@ class Doctor(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    private_key = EncryptedBinaryField(null=True, blank=True) #Encrypting the private keys so we can't store it on plain text form
+    public_key = models.TextField(null=True, blank=True)
+
+    def generate_key_pair(self):
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        self.private_key = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        self.public_key = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+        self.save()
+
     def __str__(self):
         return f"Dr. {self.user.get_full_name()}"
 
@@ -118,6 +138,7 @@ class Pharmacist(models.Model):
     pharmacy_name = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     def __str__(self):
         return f"{self.user.get_full_name()} (Pharmacien)"

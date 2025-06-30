@@ -7,7 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 class FernetEncryption:
     # Configuration CheckUp
     def __init__(self):
-        if not hasttr(settings, 'FERNET_KEY'):
+        if not hasattr(settings, 'FERNET_KEY'):
             raise ImproperlyConfigured("FERNET_KEY need to be in settings")
         self.cipher_suite = Fernet(settings.FERNET_KEY.encode())
 
@@ -19,8 +19,8 @@ class FernetEncryption:
 
     # Decrypt data
     def decrypt(self, encrypted_data):
-        if encrypted is None:
+        if encrypted_data is None:
             return None
-        return self.cipher_suite.decrypt(encrypt_data.encode()).decode()
+        return self.cipher_suite.decrypt(encrypted_data.encode()).decode()
 
 fernet = FernetEncryption()

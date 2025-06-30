@@ -193,6 +193,7 @@ LOGGING = {
         }
     },
     'handlers': {
+        
         # For medical audit content
         'medical_audit': {
             'level': 'INFO',
@@ -211,6 +212,11 @@ LOGGING = {
             'maxBytes': 20 * 1024 * 1024,
             'backupCount': 15,
         },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'medical',
+        } if DEBUG else {},
     },
     'loggers': {
         # Medical logs
