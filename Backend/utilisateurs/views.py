@@ -17,6 +17,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import FormView
 from django.urls import reverse_lazy
 from django.contrib.auth import logout as auth_logout
+from .models import Doctor, Patient, Pharmacist
 
 
 
@@ -24,6 +25,7 @@ from audit.utils import log_security_event
 
 # Create your views here.
 User = get_user_model()
+
 
 
 ## Common Configuration view
@@ -107,10 +109,28 @@ class BaseAuthView(View):
         return f"{self.user_type}_profile"
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and hasattr(request.user, self.get_user_profile_attr()):
-            return redirect(self.dashboard_url)
-        return super().dispatch(request, *args, *kwargs)
+        if request.user.is_authenticated:
+            profile_attr = self.get_user_profile_attr()
+            profile = getattr(request.user, profile_attr, None)
 
+            print(f"[DEBUG] Utilisateur connecté: {request.user.email}")
+            print(f"[DEBUG] Rôle attendu: {self.user_type}, profil détecté: {type(profile).__name__ if profile else 'Aucun'}")
+
+            if profile:
+                print("[DEBUG] Rôle correct, redirection vers dashboard.")
+                return redirect(self.dashboard_url)
+            else:
+                print("[DEBUG] Rôle incorrect, déconnexion et redirection vers login.")
+                auth_logout(request)
+                messages.warning(
+                    request,
+                    "Vous avez été déconnecté : vous ne pouvez pas accéder à cette page avec votre rôle actuel."
+                )
+                return redirect(f'{self.user_type}_login')
+
+        return super().dispatch(request, *args, **kwargs)
+
+    
 
 # Common Login View
 #@check_account_lock
@@ -122,15 +142,37 @@ class BaseLoginView(BaseAuthView):
         email = request.POST.get('email')
         password = request.POST.get('password')
         user = authenticate(request, email=email, password=password)
-        print(f"Utilisateur authentifié: {user}")
+        #print(f"Utilisateur authentifié: {user}")
 
-        if user is not None and self.has_profile(user):
-            request.session['2fa_user_id'] = user.id
-            request.session['user_type'] = self.user_type
-            return redirect(f'{self.user_type}_login_2fa')
+        if user is not None:
+            print(f"[DEBUG] Authentification réussie pour : {user.email}")
+            if self.has_profile(user):
+                print(f"[DEBUG] Rôle {self.user_type} confirmé pour : {user.email}")
+                request.session['2fa_user_id'] = user.id
+                request.session['user_type'] = self.user_type
+                return redirect(f'{self.user_type}_login_2fa')
+            else:
+                print(f"[DEBUG] Mauvais rôle pour : {user.email}, accès refusé au rôle {self.user_type}")
+        else:
+            print(f"[DEBUG] Authentification échouée pour : {email}")
 
         messages.error(request, "Identifiants incorrects")
         return render(request, self.template_login)
+    
+    def has_profile(self, user):
+        profile_attr = self.get_user_profile_attr()
+        profile = getattr(user, profile_attr, None)
+        
+        if profile is None:
+            return False
+
+        expected_model = {
+            'doctor_profile': Doctor,
+            'patient_profile': Patient,
+            'pharmacist_profile': Pharmacist
+        }.get(profile_attr)
+
+        return isinstance(profile, expected_model)
 
 # Common 2FA View
 class BaseLogin2faView(BaseAuthView):
@@ -252,7 +294,7 @@ class PatientSignUpView(BaseSignupView):
 
 @login_required
 def patient_dash(request):
-    if not hasattr(request.user, 'patient_profile') or request.user.patient is None:
+    if not hasattr(request.user, 'patient_profile') or request.user.patient_profile is None:
         messages.error(request, "Acces non autorisé")
         return redirect('patient_login')
     return render(request, 'patients/dash.html')
@@ -279,7 +321,7 @@ class DoctorSignUpView(BaseSignupView):
 
 @login_required
 def doctor_dash(request):
-    if not hasattr(request.user, 'doctor_profile'):
+    if not hasattr(request.user, 'doctor_profile') or request.user.doctor_profile is None:
         messages.error(request, "Acces non autorisé")
         return redirect('doctor_login')
     return render(request, 'doctors/dash.html')
@@ -306,7 +348,7 @@ class PharmacistSignUpView(BaseSignupView):
 
 @login_required
 def pharmacist_dash(request):
-    if not hasattr(request.user, 'pharmacist_profile'):
+    if not hasattr(request.user, 'pharmacist_profile') or request.user.pharmacist_profile is None:
         messages.error(request, "Acces non autorisé")
         return redirect('pharmacist_login')
     return render(request, 'pharmacist/dash.html')

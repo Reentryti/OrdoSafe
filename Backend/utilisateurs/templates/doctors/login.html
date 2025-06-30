@@ -1,0 +1,37 @@
+{% extends "base_auth.html" %}
+{% block title %}Connexion{% endblock %}
+{% block header_class %}primary{% endblock %}
+
+{% block auth_title %}Connexion{% endblock %}
+
+{% block auth_content %}
+  <form method="post">
+    {% csrf_token %}
+    
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-danger">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+    
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        Identifiants incorrects. Veuillez réessayer.
+      </div>
+    {% endif %}
+    
+    <div class="mb-3">
+      <label for="id_email" class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" required id="id_email" value="{{ request.POST.email|default:'' }}">
+    </div>
+    
+    <div class="mb-3">
+      <label for="id_password" class="form-label">Mot de passe</label>
+      <input type="password" name="password" class="form-control" required id="id_password">
+    </div>
+    
+    <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+  </form>
+{% endblock %}
