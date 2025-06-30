@@ -169,3 +169,69 @@ LOGIN_LOCKOUT_DURATION = config('LOGIN_LOCKOUT_DURATION', default=60, cast=int)
 #TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
 #TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
 #TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER')
+
+# Session configuration
+SESSION_COOKIE_AGE = 900
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Logs configuration for audit purpose (saved locally on a logs directory)
+# Création du dossier logs
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'medical': {
+            'format': '{asctime} [MEDICAL] {message}',
+            'style': '{',
+        },
+        'security': {
+            'format': '{asctime} [SECURITY] {message}',
+            'style': '{',
+        }
+    },
+    'handlers': {
+        # For medical audit content
+        'medical_audit': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'medical_audit.log'),
+            'formatter': 'medical',
+            'maxBytes': 50 * 1024 * 1024,
+            'backupCount': 20,
+        },
+        # For security audit content
+        'security_audit': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'security.log'),
+            'formatter': 'security',
+            'maxBytes': 20 * 1024 * 1024,
+            'backupCount': 15,
+        },
+    },
+    'loggers': {
+        # Medical logs
+        'medical.audit': {
+            'handlers': ['medical_audit'] + (['console'] if DEBUG else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Logs secure
+        'security.audit': {
+            'handlers': ['security_audit'] + (['console'] if DEBUG else []),
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+
+if not DEBUG:
+    LOGGING['loggers']['django'] = {
+        'handlers': [],
+        'level': 'CRITICAL',
+        'propagate': False,
+    }
