@@ -321,6 +321,7 @@ class PharmacistCreationForm(UserCreationForm):
                 user.phone_number= self.cleaned_data['phone_number']
                 user.two_factor_method= self.cleaned_data['two_factor_method']
                 user.save()
+                
                 pharmacist = Pharmacist.objects.create(
                     user=user, 
                     licence_number= self.cleaned_data['licence_number'],

@@ -295,7 +295,7 @@ class PharmacistLoginView(BaseLoginView):
 
 class PharmacistLogin2faView(BaseLogin2faView):
     user_type = 'pharmacist'
-    template_login_2fa = 'pharmacist/login_2fa.html'
+    template_login_2fa = 'auth/login_2fa.html'
     dashboard_url = 'pharmacist_dash'
 
 class PharmacistSignUpView(BaseSignupView):
@@ -307,5 +307,6 @@ class PharmacistSignUpView(BaseSignupView):
 @login_required
 def pharmacist_dash(request):
     if not hasattr(request.user, 'pharmacist_profile'):
-        return redirect('home')
+        messages.error(request, "Acces non autorisé")
+        return redirect('pharmacist_login')
     return render(request, 'pharmacist/dash.html')

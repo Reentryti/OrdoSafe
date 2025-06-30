@@ -1,173 +1,343 @@
 from django.views.generic import CreateView, UpdateView, DeleteView, DetailView, ListView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .forms import OrdonnanceForm
 import json
 from audit.utils import log_security_event
 from .models import Ordonnance
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.views import View
+from django.http import JsonResponse
+from utilisateurs.models import Doctor, Patient
+from django.utils import timezone
+from .forms import OrdonnanceForm
+from django.core.exceptions import PermissionDenied
+import logging
+from .utils import log_medical_action, log_security_event
 
-# Ordonnance Creation view
-class OrdonnanceCreateView(CreateView, LoginRequiredMixin):
-    model = Ordonnance
-    form_class = OrdonnanceForm
-    template_name = 'ordonnance_form.html'
-    #success_url = reverse_lazy('ordonnance_list')
 
-    def form_valid(self, form):    
-        medicaments = json.loads(self.request.POST.get('medicaments', '[]'))
-        form.instance.medicaments = medicaments
-        form.instance.created_by = self.request.user
+#####################################################
 
-        response = super().form_valid(form)
-        # Ordonnance creation log
-        log_security_event(
-            user=self.request.user,
-            action='ordonnance_created',
-            metadata={
-                'ordonnance_id':self.object.id,
-                'patient_id':self.object.patient.id
-            }
+# Patient Views
+
+#####################################################
+
+class PatientRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return hasattr(self.request.user, 'patient_profile')
+
+# Ordonnance display list
+class PatientOrdonnanceListView(PatientRequiredMixin, View):
+    def get(self, request):
+        patient = request.user.patient_profile
+        ordonnance = Ordonnance.objects.filter(patient=patient).order_by('-date_creation')
+        return render(request, 'ordonnance/patient_list.html', {'ordonnance': ordonnance})
+
+# Ordonnance Detail view
+class PatientOrdonnanceDetailView(PatientRequiredMixin, View):
+    def get(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.patient != request.user.patient_profile:
+            raise PermissionDenied
+        
+        context = {
+            'ordonnance': ordonnance,
+            'doctor_info': ordonnance.sensitive_data['doctor_info'],
+            'medicaments': ordonnance.sensitive_data['medicaments'],
+            'is_patient': True
+        }
+        return render(request, 'ordonnance/detail.html', context)
+
+# Ordonnance Renewal Request
+class RequestRenewalView(PatientRequiredMixin, View):
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.patient != request.user.patient_profile:
+            raise PermissionDenied
+        
+        if ordonnance.status != 'issued':
+            return JsonResponse({'status': 'error', 'message': 'Seules les ordonnances émises peuvent être renouvelées'}, status=400)
+        
+        # In a real app, you would send a notification to the doctor
+        ordonnance.notes = f"Demande de renouvellement par le patient le {timezone.now().strftime('%Y-%m-%d')}"
+        ordonnance.save()
+        
+        log_medical_action(
+            user=request.user,
+            action="RENEWAL_REQUESTED",
+            ordonnance_id=ordonnance.id,
+            patient=ordonnance.patient,
+            details="Demande de renouvellement par le patient"
         )
-        return response
+        #logger.info(f"Patient {request.user.get_full_name()} a demandé une demande de renouvellement pour l'ordonnance {pk}")
+        return JsonResponse({'status': 'success', 'message': 'Demande de renouvellement envoyée au médecin'})
 
-    def get_initial(self):
-        initial = super().get_initial()
-        if hasattr(self.request.user, 'doctor_profile'):
-            initial['doctor'] = self.request.user.doctor_profile
-        return initial
+
+#####################################################
+
+# Doctor View 
+
+#####################################################
+
+
+class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return hasattr(self.request.user, 'doctor_profile')
+
+# Ordonnance Creation
+class OrdonnanceCreateView(DoctorRequiredMixin, View):
+    def get(self, request):
+        form = OrdonnanceForm(doctor=request.user.doctor_profile)
+        return render(request, 'ordonnance/create.html', {'form': form})
     
-    def get_form_kwargs(self):
-        kwargs = super().get._form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
+    def post(self, request):
+        form = OrdonnanceForm(request.POST, doctor=request.user.doctor_profile)
+        if form.is_valid():
+            ordonnance = form.save(commit=False)
+            ordonnance.doctor = request.user.doctor_profile
+            ordonnance.created_by = request.user
+            ordonnance.status = 'draft'
+            ordonnance.save()
+            
+            log_medical_action(
+                user=request.user,
+                action="ORDONNANCE_CREATED",
+                ordonnance_id=ordonnance.id,
+                patient=ordonnance.patient,
+                details=f"Status: {ordonnance.status}"
+            )
+            
+            return redirect('doctor_ordonnance_detail', pk=ordonnance.id)
+        
+        return render(request, 'ordonnance/create.html', {'form': form})
+
+
+# Ordonnance Modification
+class OrdonnanceUpdateView(DoctorRequiredMixin, View):
+    def get(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.doctor != request.user.doctor_profile:
+            raise PermissionDenied
+        
+        form = OrdonnanceForm(instance=ordonnance, doctor=request.user.doctor_profile)
+        return render(request, 'ordonnance/update.html', {'form': form, 'ordonnance': ordonnance})
     
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.doctor != request.user.doctor_profile:
+            raise PermissionDenied
+        
+        form = OrdonnanceForm(request.POST, instance=ordonnance, doctor=request.user.doctor_profile)
+        if form.is_valid():
+            form.save()
 
-# Ordonnance Update view
-class OrdonnanceUpdateView(UpdateView, LoginRequiredMixin):
-    model = Ordonnance
-    form_class = OrdonnanceForm
-    template_name = 'ordonnance_form.html'
+            log_medical_action(
+                user=request.user,
+                action="ORDONNANCE_UPDATED",
+                ordonnance_id=ordonnance.id,
+                patient=ordonnance.patient,
+                details="Ordonnance mise à jour"
+            )
+            #logger.info(f"Dr {request.user.get_full_name()} a modifié la prescription {pk}")
+            return redirect('doctor_ordonnance_detail', pk=pk)
+        
+        return render(request, 'ordonnance/update.html', {'form': form, 'ordonnance': ordonnance})
 
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
+# Ordonnance Details
+class OrdonnanceDetailView(DoctorRequiredMixin, View):
+    def get(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.doctor != request.user.doctor_profile:
+            raise PermissionDenied
+        
+        context = {
+            'ordonnance': ordonnance,
+            'patient_info': ordonnance.sensitive_data['patient_info'],
+            'medicaments': ordonnance.sensitive_data['medicaments'],
+            'is_doctor': True
+        }
+        return render(request, 'ordonnance/detail.html', context)
 
-    def form_valid(self, form):
-        medicaments = json.loads(self.request.POST.get('medicaments', '[]'))
-        form.instance.medicaments = medicaments
 
-        response = super().form_valid(form)
+# Ordonnance Deletion
+class OrdonnanceDeleteView(DoctorRequiredMixin, View):
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.doctor != request.user.doctor_profile:
+            raise PermissionDenied
+        
+        log_medical_action(
+            user=request.user,
+            action="ORDONNANCE_DELETED",
+            ordonnance_id=ordonnance.id,
+            patient=ordonnance.patient,
+            details="Ordonnance supprimée"
+        )
+        ordonnance.delete()
+        #logger.info(f"Dr {request.user.get_full_name()} a supprimé la prescription {pk}")
+        return JsonResponse({'status': 'success', 'message': 'Ordonnance supprimée avec succès'})
 
-        # Ordonnance Update Log
-        log_security_event(
-            user=self.request.user,
-            action='ordonnance_updated',
-            metadata={
-                'ordonnance_id':self.object.id,
-                'patient_id':self.object.patient.id
-            }
+class SignOrdonnanceView(DoctorRequiredMixin, View):
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        if ordonnance.doctor != request.user.doctor_profile:
+            raise PermissionDenied
+        
+        if ordonnance.status != 'draft':
+            return JsonResponse({'status': 'error', 'message': 'Seuls les brouillons peuvent être signés'}, status=400)
+        
+        signature_data = {
+            'doctor_id': request.user.doctor_profile.id,
+            'timestamp': str(timezone.now()),
+            'license_number': request.user.doctor_profile.licence_number
+        }
+        
+        ordonnance.signature = json.dumps(signature_data)
+        ordonnance.status = 'issued'
+        ordonnance.save()
+        
+        log_medical_action(
+            user=request.user,
+            action="ORDONNANCE_SIGNED",
+            ordonnance_id=ordonnance.id,
+            patient=ordonnance.patient,
+            details="Signature électronique ajoutée"
         )
 
-        return response
-    
+        #logger.info(f"Doctor {request.user.get_full_name()} signed ordonnance {pk}")
+        return JsonResponse({'status': 'success', 'message': 'Ordonnance signée et émise avec succès'})
 
-# Ordonnance Update View
-class OrdonnanceDeleteView(DeleteView, LoginRequiredMixin):
-    model = Ordonnance
-    template_name = 'delete.html'
+# Reorder ordonnance
+class RenewOrdonnanceView(DoctorRequiredMixin, View):
+    def post(self, request, pk):
+        original = get_object_or_404(Ordonnance, pk=pk)
+        if original.doctor != request.user.doctor_profile:
+            raise PermissionDenied
+        
+        if original.status != 'issued':
+            return JsonResponse({'status': 'error', 'message': 'Seules les ordonnances émises peuvent être renouvelées'}, status=400)
+        
+        new_ordonnance = Ordonnance.objects.create(
+            patient=original.patient,
+            doctor=original.doctor,
+            medicaments=original.medicaments,
+            status='draft',
+            created_by=request.user,
+            notes=f"Renouvellement de l'ordonnance #{original.id}"
+        )
+        
+        log_medical_action(
+            user=request.user,
+            action="ORDONNANCE_RENEWED",
+            ordonnance_id=new_ordonnance.id,
+            patient=new_ordonnance.patient,
+            details=f"Renouvellement de #{original.id}"
+        )
+        #logger.info(f"Dr {request.user.get_full_name()} a renouvellé la prescription {pk} as {new_ordonnance.id}")
+        return JsonResponse({
+            'status': 'success', 
+            'message': 'Ordonnance renouvelée avec succès',
+            'new_ordonnance_id': new_ordonnance.id
+        })
 
-    def delete(self, request, *args, **kwargs):
-        ordonnance = self.get_object()
 
-        # Ordonnance Deletion Log
+#####################################################
+
+# Pharmacist Views
+
+#####################################################
+
+class PharmacistRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return hasattr(self.request.user, 'pharmacist_profile')
+
+# Ordonnance Validation
+class ValidateOrdonnanceView(PharmacistRequiredMixin, View):
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        pharmacist = request.user.pharmacist_profile
+        
+        if ordonnance.status != 'issued':
+            return JsonResponse({'status': 'error', 'message': 'Seules les ordonnances émises peuvent être honorées'}, status=400)
+        
+        # Verify signature if needed
+        if not ordonnance.signature:
+            return JsonResponse({'status': 'error', 'message': 'Ordonnance non signée'}, status=400)
+        
+        ordonnance.status = 'fulfilled'
+        ordonnance.save()
+        
+        log_medical_action(
+            user=request.user,
+            action="ORDONNANCE_VALIDATED",
+            ordonnance_id=ordonnance.id,
+            patient=ordonnance.patient,
+            details="Ordonnance honorée par le pharmacien"
+        )
+        #logger.info(f"Pharmacist {pharmacist.user.get_full_name()} a validé l'ordonnance {pk}")
+        return JsonResponse({'status': 'success', 'message': 'Ordonnance honorée avec succès'})
+
+# Ordonnance Reported Feat 
+class ReportOrdonnanceView(PharmacistRequiredMixin, View):
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        pharmacist = request.user.pharmacist_profile
+        reason = request.POST.get('reason', '')
+        
+        if not reason:
+            return JsonResponse({'status': 'error', 'message': 'Veuillez fournir une raison'}, status=400)
+        
+        ordonnance.status = 'cancelled'
+        ordonnance.notes = f"Signalée par {pharmacist.user.get_full_name()} ({pharmacist.pharmacy_name}): {reason}"
+        ordonnance.save()
+
         log_security_event(
             user=request.user,
-            action='ordonnance_deleted',
-            metadata={
-                'ordonnance_id':ordonnance.id,
-                'patient_id':ordonnance.patient.id
-            }
+            event="ORDONNANCE_REPORTED",
+            ordonnance_id=ordonnance.id,
+            ip_address=request.META.get('REMOTE_ADDR'),
+            details=f"Raison: {reason}"
         )
-        return super().delete(request, *args, **kwargs)
+        #logger.warning(f"Pharmacist {pharmacist.user.get_full_name()} a reporté {pk}: {reason}")
+        return JsonResponse({'status': 'success', 'message': 'Ordonnance signalée avec succès'})
 
-
-
-# Ordonnance Detail View
-class OrdonnanceDetailView(LoginRequiredMixin, DetailView):
-    model = Ordonnance
-    template_name='ordonnance/'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        user = self.request.user
-        ordonnance = self.object
-
-        # Define access control 
-        context['can_edit'] = (
-            hasattr(user, 'doctor_profile') and ordonnance.medecin == user.doctor_profile and ordonnance.status == 'draft'
-        )
-
-        context['can_delete'] = context['can_edit']
-        context['can_sign'] = (
-            hasattr(user, 'doctor_profile') and ordonnance.medecin == user.doctor_profile and ordonnance.status in ['draft', 'issued']
-
-        )
-        return context
-    
-
-# Ordonnance Signature View
-class OrdonnanceSignView(LoginRequiredMixin, DetailView):
-    model = Ordonnance
-    http_method_names = ['post']
-
-    def post(self, request, *args, **kwargs):
-        ordonnance = self.get_object()
-
-        if not (hasattr(request.user, 'doctor_profile') and ordonnance.medecin == request.user.doctor_profile):
-            messages.error(request, "Action non autorisée")
-            return redirect('ordonnance_detail', pk=ordonnance.pk)
+# Ordonnance Blocked view
+class BlockOrdonnanceView(PharmacistRequiredMixin, View):
+    def post(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        pharmacist = request.user.pharmacist_profile
         
-        try:
-            private_key_path = f"keys/doctor_{request.user.id}_private.pem"
-
-            ordonnance.sign(private_key_path)
-            messages.success(request, "Ordonnance signée avec succés")
-
-            # Ordonnance Signature log
-            log_security_event(
-                user=request.user,
-                action='ordonnance_signed',
-                metadata={
-                    'ordonnance_id':ordonnance.id,
-                    'patient_id':ordonnance.patient.id,
-                    'signature':ordonnance.signature[:50] + '...'
-                }
-            )
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la signature:{str(e)}")
-
-        return redirect('ordonnance_detail', pk=ordonnance.pk)
-    
-
-# Ordonnance List View
-class OrdonnanceListView(LoginRequiredMixin, ListView):
-    model = Ordonnance
-    template_name = 'list.html'
-    context_object_name = 'ordonnances'
-    paginate_by = 10
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-
-        #Distinguish btw patient and doctor list
-        if hasattr(self.request.user, 'patient_profile'):
-            return queryset.filter(patient=self.request.user.patient_profile)
-        elif hasattr(self.request.user, 'doctor_profile'):
-            return queryset.filter(doctor=self.request.user.doctor_profile)
+        if ordonnance.status == 'fulfilled':
+            return JsonResponse({'status': 'error', 'message': 'Ordonnance déjà honorée'}, status=400)
         
-        return queryset.none()
-    
-    
+        ordonnance.status = 'cancelled'
+        ordonnance.notes = f"Bloquée par {pharmacist.user.get_full_name()} ({pharmacist.pharmacy_name})"
+        ordonnance.save()
+        
+        log_security_event(
+            user=request.user,
+            event="ORDONNANCE_BLOCKED",
+            ordonnance_id=ordonnance.id,
+            ip_address=request.META.get('REMOTE_ADDR'),
+            details="Ordonnance bloquée par le pharmacien"
+        )
+        #logger.warning(f"Pharmacist {pharmacist.user.get_full_name()} a bloqué l'ordonnance {pk}")
+        return JsonResponse({'status': 'success', 'message': 'Ordonnance bloquée avec succès'})
+
+
+class PharmacistOrdonnanceDetailView(PharmacistRequiredMixin, View):
+    def get(self, request, pk):
+        ordonnance = get_object_or_404(Ordonnance, pk=pk)
+        
+        context = {
+            'ordonnance': ordonnance,
+            'patient_info': ordonnance.sensitive_data['patient_info'],
+            'doctor_info': ordonnance.sensitive_data['doctor_info'],
+            'medicaments': ordonnance.sensitive_data['medicaments'],
+            'is_pharmacist': True
+        }
+        
+        return render(request, 'ordonnance/detail.html', context)
+
     
