@@ -88,7 +88,7 @@ class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 class OrdonnanceCreateView(DoctorRequiredMixin, View):
     def get(self, request):
         form = OrdonnanceForm(doctor=request.user.doctor_profile)
-        return render(request, 'ordonnance/create.html', {'form': form})
+        return render(request, 'create.html', {'form': form})
     
     def post(self, request):
         form = OrdonnanceForm(request.POST, doctor=request.user.doctor_profile)
@@ -109,7 +109,7 @@ class OrdonnanceCreateView(DoctorRequiredMixin, View):
             
             return redirect('doctor_ordonnance_detail', pk=ordonnance.id)
         
-        return render(request, 'ordonnance/create.html', {'form': form})
+        return render(request, 'create.html', {'form': form})
 
 
 # Ordonnance Modification

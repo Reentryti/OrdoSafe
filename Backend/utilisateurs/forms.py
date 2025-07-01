@@ -96,6 +96,12 @@ class PatientCreationForm(UserCreationForm):
             raise ValidationError("Utilisateur deja existant")
         return email
     
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data.get('phone_number')
+        if BasicUser.objects.filter(phone_number=phone_number).exists():
+            raise ValidationError("Utilisateur deja existant")
+        return phone_number
+
     def clean_date_birth(self):
         date_birth = self.cleaned_data.get('date_birth')
         if date_birth:
