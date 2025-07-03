@@ -172,7 +172,7 @@ class DoctorCreationForm(UserCreationForm):
     phone_number = PhoneNumberField(
         label="Numero de téléphone",
         region='SN',
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={
             'class':'form-control',
             'placeholder':'77 777 77 77'

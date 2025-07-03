@@ -8,12 +8,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views import View
 from django.http import JsonResponse
-from utilisateurs.models import Doctor, Patient
+from utilisateurs.models import Doctor, Patient, BasicUser
 from django.utils import timezone
 from .forms import OrdonnanceForm
 from django.core.exceptions import PermissionDenied
 import logging
 from .utils import log_medical_action, log_security_event
+from django.views.decorators.http import require_http_methods
+
 
 
 #####################################################
@@ -157,7 +159,7 @@ class OrdonnanceDetailView(DoctorRequiredMixin, View):
             'medicaments': ordonnance.sensitive_data['medicaments'],
             'is_doctor': True
         }
-        return render(request, 'ordonnance/detail.html', context)
+        return render(request, 'detail.html', context)
 
 
 # Ordonnance Deletion
@@ -181,32 +183,28 @@ class OrdonnanceDeleteView(DoctorRequiredMixin, View):
 class SignOrdonnanceView(DoctorRequiredMixin, View):
     def post(self, request, pk):
         ordonnance = get_object_or_404(Ordonnance, pk=pk)
+
         if ordonnance.doctor != request.user.doctor_profile:
             raise PermissionDenied
-        
+
         if ordonnance.status != 'draft':
             return JsonResponse({'status': 'error', 'message': 'Seuls les brouillons peuvent être signés'}, status=400)
-        
-        signature_data = {
-            'doctor_id': request.user.doctor_profile.id,
-            'timestamp': str(timezone.now()),
-            'license_number': request.user.doctor_profile.licence_number
-        }
-        
-        ordonnance.signature = json.dumps(signature_data)
-        ordonnance.status = 'issued'
-        ordonnance.save()
-        
+
+        try:
+            ordonnance.sign(request.user.doctor_profile)
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
         log_medical_action(
             user=request.user,
             action="ORDONNANCE_SIGNED",
             ordonnance_id=ordonnance.id,
             patient=ordonnance.patient,
-            details="Signature électronique ajoutée"
+            details="Signature électronique sécurisée ajoutée"
         )
 
-        #logger.info(f"Doctor {request.user.get_full_name()} signed ordonnance {pk}")
-        return JsonResponse({'status': 'success', 'message': 'Ordonnance signée et émise avec succès'})
+        return JsonResponse({'status': 'success', 'message': 'Ordonnance signée avec une signature cryptographique'})
+
 
 # Reorder ordonnance
 class RenewOrdonnanceView(DoctorRequiredMixin, View):
@@ -341,3 +339,38 @@ class PharmacistOrdonnanceDetailView(PharmacistRequiredMixin, View):
         return render(request, 'ordonnance/detail.html', context)
 
     
+
+# Search view (just to test smt)
+# Maybe we gonna add a complete different search options
+@require_http_methods(["GET"])
+def patient_search(request):
+    phone_number = request.GET.get('phone', '').strip()
+    
+    if not phone_number:
+        return JsonResponse({'trouvé': False})
+    
+    try:
+        
+        user = BasicUser.objects.get(phone_number=phone_number)
+        
+     
+        try:
+            patient = user.patient_profile
+            return JsonResponse({
+                'trouvé': True,
+                'name': user.get_full_name(),
+                'id': patient.id,
+                'user_id': user.id
+            })
+        except Patient.DoesNotExist:
+            
+            return JsonResponse({
+                'trouvé': False,
+                'message': 'Cet utilisateur n\'est pas enregistré comme patient'
+            })
+            
+    except BasicUser.DoesNotExist:
+        return JsonResponse({'trouvé': False})
+    
+    except Exception as e:
+        return JsonResponse({'trouvé': False, 'error': str(e)})

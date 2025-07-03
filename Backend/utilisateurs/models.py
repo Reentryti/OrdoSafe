@@ -35,7 +35,7 @@ class BasicUser(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=30)
     date_birth = models.DateField()
     email = models.EmailField(validators=[validate_email], unique=True)
-    phone_number = PhoneNumberField(region='SN', blank=True, default='', unique=True)
+    phone_number = PhoneNumberField(region='SN', blank=True, null=True, unique=True)
     two_factor_method = models.CharField(
         max_length=10,
         choices=[('email', 'Email'), ('sms', 'SMS')],

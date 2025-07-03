@@ -7,7 +7,7 @@ security_logger = logging.getLogger('security.audit')
 # Medical log 
 def log_medical_action(user, action, ordonnance_id=None, patient=None, details=None):
     message_parts = [
-        f"USER: {user.get_full_name()} ({user.username})",
+        f"USER: {user.get_full_name()} ({user.email})",
         f"ACTION: {action}",
     ]
     

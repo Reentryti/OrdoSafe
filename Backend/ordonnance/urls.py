@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import (
+from . import views
+
+from .views import ( 
     PatientOrdonnanceListView, PatientOrdonnanceDetailView, RequestRenewalView,
     OrdonnanceCreateView, OrdonnanceUpdateView, OrdonnanceDetailView, OrdonnanceDeleteView, SignOrdonnanceView, RenewOrdonnanceView,
     ValidateOrdonnanceView, ReportOrdonnanceView, BlockOrdonnanceView, PharmacistOrdonnanceDetailView
@@ -22,4 +24,7 @@ urlpatterns = [
     path('pharmacist/ordonnance/<int:pk>/report/', ReportOrdonnanceView.as_view(), name='report_ordonnance'),
     path('pharmacist/ordonnance/<int:pk>/block/', BlockOrdonnanceView.as_view(), name='block_ordonnance'),
     path('pharmacist/ordonnance/<int:pk>/', PharmacistOrdonnanceDetailView.as_view(), name='pharmacist_ordonnance_detail'),
+
+    #Utils
+    path('ajax/patient-search/', views.patient_search, name='patient_search'),
 ]

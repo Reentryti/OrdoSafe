@@ -18,7 +18,7 @@ from django.views.generic import FormView
 from django.urls import reverse_lazy
 from django.contrib.auth import logout as auth_logout
 from .models import Doctor, Patient, Pharmacist
-
+from django.urls import reverse
 
 
 from audit.utils import log_security_event
@@ -89,7 +89,18 @@ def backup_codes(request):
             messages.error(request, "Aucun code de sauvegarde disponible")
             return redirect('setup_2fa')
     
-    return render(request, 'auth/backup_codes.html', {'backup_codes': backup_codes})
+    
+    if hasattr(request.user, 'doctor'):
+        dashboard_url = reverse('doctor_dash')
+    elif hasattr(request.user, 'patient'):
+        dashboard_url = reverse('patient_dash')
+    else:
+        dashboard_url = reverse('patient_dash')
+    
+    return render(request, 'auth/backup_codes.html', {
+        'backup_codes': backup_codes,
+        'dashboard_url': dashboard_url
+    })
 
 
 
@@ -318,6 +329,17 @@ class DoctorSignUpView(BaseSignupView):
     template_signup = 'doctors/signup.html'
     form_class = DoctorCreationForm
     dashboard_url = 'doctor_dash'
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        user = self.object
+
+        doctor = user.doctor_profile
+
+        if not doctor.private_key:
+            doctor.generate_key_pair()
+
+        return response
 
 @login_required
 def doctor_dash(request):
