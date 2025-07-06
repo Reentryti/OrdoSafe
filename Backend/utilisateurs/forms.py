@@ -7,7 +7,7 @@ import datetime
 from phonenumber_field.formfields import PhoneNumberField
 from django.db import transaction
 from django.forms import PasswordInput
-
+from django.contrib.auth.password_validation import password_validators_help_text_html
 
 
 # Forms Control (Patient input)
@@ -95,6 +95,10 @@ class PatientCreationForm(UserCreationForm):
         if BasicUser.objects.filter(email=email).exists():
             raise ValidationError("Utilisateur deja existant")
         return email
+    
+    #def __init__(self, *args, **kwargs):
+    #    super().__init__(*args, **kwargs)
+    #    self.fields['password1'].help_text = password_validators_help_text_html()
     
     def clean_phone_number(self):
         phone_number = self.cleaned_data.get('phone_number')

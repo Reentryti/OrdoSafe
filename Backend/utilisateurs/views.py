@@ -6,9 +6,7 @@ from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from django_otp import login as otp_login
-import random
-import qrcode
-import base64
+import random, qrcode, base64, hashlib
 from .forms import PatientCreationForm, DoctorCreationForm, PharmacistCreationForm, Reset2FAForm
 from rest_framework.views import View
 from io import BytesIO
@@ -46,12 +44,14 @@ def setup_2fa(request):
         if device.verify_token(token):
             device.confirmed = True
             device.save()
-
-            backup_codes = [str(random.randint(100000, 999999)) for _ in range(10)]
-            user.backup_codes = backup_codes
+            #Plain text backup code generation
+            backup_codes_plain = [str(random.randint(100000, 999999)) for _ in range(10)]
+            #Hashed the backup codes
+            hashed_codes = [hashlib.sha256(code.encode().hexdigest() for code in backup_codes_plain)]
+            user.backup_codes = hashed_codes
             user.save()
 
-            request.session['backup_codes'] = backup_codes
+            request.session['backup_codes'] = backup_codes_plain
             messages.success(request, "2FA activée avec succés")
             return redirect('backup_codes')
         else:
@@ -92,10 +92,10 @@ def backup_codes(request):
     
     if hasattr(request.user, 'doctor'):
         dashboard_url = reverse('doctor_dash')
-    elif hasattr(request.user, 'patient'):
-        dashboard_url = reverse('patient_dash')
+    elif hasattr(request.user, 'pharmacist'):
+        dashboard_url = reverse('pharmacist_dash')
     else:
-        dashboard_url = reverse('patient_dash')
+        dashboard_url = reverse('pharmacist_dash')
     
     return render(request, 'auth/backup_codes.html', {
         'backup_codes': backup_codes,

@@ -8,6 +8,8 @@ from datetime import timedelta
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from .fields import EncryptedBinaryField
+import hashlib
+from django_cryptography.fields import encrypt
 
 
 # Create your models here.
@@ -34,8 +36,8 @@ class BasicUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     date_birth = models.DateField()
-    email = models.EmailField(validators=[validate_email], unique=True)
-    phone_number = PhoneNumberField(region='SN', blank=True, null=True, unique=True)
+    email = encrypt(models.EmailField(validators=[validate_email], unique=True))
+    phone_number = encrypt(PhoneNumberField(region='SN', blank=True, null=True, unique=True))
     two_factor_method = models.CharField(
         max_length=10,
         choices=[('email', 'Email'), ('sms', 'SMS')],
@@ -79,7 +81,7 @@ class BasicUser(AbstractBaseUser, PermissionsMixin):
         self.login_attempts += 1
         if self.login_attempts >= 3: # Blocking after 3 attempts failed
             self.locked_until = timezone.now() + timedelta(minutes=15)
-        
+         
         self.save()
 
 
@@ -106,7 +108,7 @@ class Patient(models.Model):
 # Doctors Class
 class Doctor(models.Model):
     user = models.OneToOneField(BasicUser, on_delete=models.CASCADE, related_name='doctor_profile')
-    licence_number = models.CharField(max_length=30, unique=True)
+    licence_number = encrypt(models.CharField(max_length=30, unique=True))
     specialisation = models.CharField(max_length=30)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -134,7 +136,7 @@ class Doctor(models.Model):
 # Pharmacist Class
 class Pharmacist(models.Model):
     user = models.OneToOneField(BasicUser, on_delete=models.CASCADE, related_name='pharmacist_profile')
-    licence_number = models.CharField(max_length=30, unique=True)
+    licence_number = encrypt(models.CharField(max_length=30, unique=True))
     pharmacy_name = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -23,7 +23,7 @@ class FernetEncryption:
             data_bytes = str(data).encode('utf-8')
 
         encrypted_bytes = self.cipher_suite.encrypt(data_bytes)
-        return encrypted_bytes.encode('utf-8')
+        return encrypted_bytes
 
     # Decrypt data
     def decrypt(self, encrypted_data):
@@ -37,6 +37,6 @@ class FernetEncryption:
         else:
             encrypted_bytes = str(encrypted_data).encode('utf-8')
         decrypted_bytes = self.cipher_suite.decrypt(encrypted_bytes)
-        return decrypted_bytes
+        return decrypted_bytes.decode('utf-8')
 
 fernet = FernetEncryption()
