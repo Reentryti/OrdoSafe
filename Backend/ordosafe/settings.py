@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_static',
     'phonenumber_field', #phone field (compulsory)
     'audit.apps.AuditConfig',
+    #'django_cryptography', #obsolete for newer django version
 ]
 
 MIDDLEWARE = [
@@ -119,6 +120,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'utilisateurs.validators.CustomPasswordValidator',
+    },
 ]
 
 
@@ -152,6 +156,7 @@ AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
 
 # CYPHER METHOD
 FERNET_KEY = config('FERNET_KEY')
+FIELD_ENCRYPTION_KEY = FERNET_KEY
 
 # Anti Brute Force Configuration
 LOGIN_ATTEMPTS_LIMIT = config('LOGIN_ATTEMPTS_LIMIT', default=5, cast=int)
@@ -233,7 +238,6 @@ LOGGING = {
         },
     },
 }
-
 
 if not DEBUG:
     LOGGING['loggers']['django'] = {

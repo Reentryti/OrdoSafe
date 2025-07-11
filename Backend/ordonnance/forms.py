@@ -1,31 +1,40 @@
 from django import forms
 from .models import Ordonnance
-from utilisateurs.models import Patient
 from phonenumber_field.formfields import PhoneNumberField
+from django.core.exceptions import ValidationError
 
-class OrdonnanceForm(forms.ModelForm):
+class OrdonnanceForm(forms.Form):
+    # Patient informations
+    patient_first_name = forms.CharField(
+        label="Prénom du patient",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Prénom'})
+    )
+    patient_last_name = forms.CharField(
+        label='Nom du patient',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom'})
+    )
+    patient_date_birth = forms.DateField(
+        label="Date de naissance",
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
     patient_phone = PhoneNumberField(
-        label="Numero de téléphone du patient", 
+        label="Numéro de téléphone du patient", 
         region='SN',
-        widget=forms.TextInput(attrs={
-            'class':'form-control',
-            'placeholder':'77 777 77 77'
-        }))
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '77 777 77 77'})
+    )
     medicaments = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 8,
-            'placeholder': 'Exemple:\nParacétamol 1000mg - 1 comprimé toutes les 6 heures - 3 jours\nIbuprofène 400mg - 1 comprimé 3x/jour après les repas - 5 jours'
+            'placeholder': 'Saisissez les médicaments séparés par des virgules ou en allant à la ligne'
         }),
-        label="Médicaments et posologie",
-        help_text="Saisissez chaque médicament sur une ligne séparée"
+        label="Médicaments"
     )
-    
     notes = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 4,
-            'placeholder': 'Instructions complémentaires, conseils au patient...'
+            'placeholder': 'Instructions complémentaires...'
         }),
         required=False,
         label="Notes et instructions"
@@ -34,69 +43,41 @@ class OrdonnanceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.doctor = kwargs.pop('doctor', None)
         super().__init__(*args, **kwargs)
-        print("Champs du formulaire :", self.fields.keys())
 
-    def clean_patient_phone(self):
-        phone_number = self.cleaned_data['patient_phone']
-        try:
-            patient = Patient.objects.get(user__phone_number=phone_number)
-        except Patient.DoesNotExist:
-            raise forms.ValidationError("Aucun patient avec ce numéro de téléphone")
-        return patient
-    
     def clean_medicaments(self):
-        medicaments_text = self.cleaned_data.get('medicaments')
-        if not medicaments_text:
-            raise forms.ValidationError("Veuillez saisir au moins un médicament.")
+        raw_meds = self.cleaned_data['medicaments']
+        if not raw_meds.strip():
+            raise ValidationError("Veuillez saisir au moins un médicament.")
         
-        # Conversion on A JSON
-        medicaments_list = []
-        lines = medicaments_text.strip().split('\n')
+        meds = []
+        for line in raw_meds.split('\n'):
+            line_meds = [m.strip() for m in line.split(',') if m.strip()]
+            meds.extend(line_meds)
         
-        for i, line in enumerate(lines, 1):
-            line = line.strip()
-            if not line:
-                continue
-      
-            parts = [part.strip() for part in line.split(' - ')]
-            
-            if len(parts) >= 1:
-                medicament = {
-                    "id": i,
-                    "nom": parts[0],
-                    "posologie": parts[1] if len(parts) > 1 else "",
-                    "duree": parts[2] if len(parts) > 2 else "",
-                    "texte_complet": line
-                }
-                medicaments_list.append(medicament)
-            else:
-                medicament = {
-                    "id": i,
-                    "nom": line,
-                    "posologie": "",
-                    "duree": "",
-                    "texte_complet": line
-                }
-                medicaments_list.append(medicament)
+        if not meds:
+            raise ValidationError("Format des médicaments invalide.")
         
-        if not medicaments_list:
-            raise forms.ValidationError("Aucun médicament valide détecté.")
-            
-        return medicaments_list 
-        
+        return [
+            {"nom": med, "posologie": "", "duree": ""} 
+            for med in meds
+        ]
+
     def save(self, commit=True):
-        ordonnance = super().save(commit=False)
-        ordonnance.patient = self.cleaned_data['patient_phone']
+        if not self.doctor:
+            raise ValidationError("Aucun médecin spécifié.")
+
+        ordonnance = Ordonnance(
+            patient_nom=self.cleaned_data['patient_last_name'],
+            patient_prenom=self.cleaned_data['patient_first_name'],
+            patient_date_naissance=self.cleaned_data['patient_date_birth'],
+            medicaments=self.cleaned_data['medicaments'],
+            notes=self.cleaned_data['notes'],
+            doctor=self.doctor,
+            created_by=self.doctor.user
+        )
+
         if commit:
             ordonnance.save()
+            ordonnance.sign(self.doctor)
+
         return ordonnance
-        #if doctor:
-        #   self.fields['patient'].queryset = Patient.objects.all()
-    
-    class Meta:
-        model = Ordonnance
-        fields = ['patient_phone', 'medicaments', 'notes']
-        widgets = {
-            'medicaments': forms.Textarea(attrs={'rows': 5}),
-            'notes': forms.Textarea(attrs={'rows': 3}),
-        }

@@ -47,7 +47,7 @@ def setup_2fa(request):
             #Plain text backup code generation
             backup_codes_plain = [str(random.randint(100000, 999999)) for _ in range(10)]
             #Hashed the backup codes
-            hashed_codes = [hashlib.sha256(code.encode().hexdigest() for code in backup_codes_plain)]
+            hashed_codes = [hashlib.sha256(code.encode()).hexdigest() for code in backup_codes_plain]
             user.backup_codes = hashed_codes
             user.save()
 
@@ -90,9 +90,9 @@ def backup_codes(request):
             return redirect('setup_2fa')
     
     
-    if hasattr(request.user, 'doctor'):
+    if hasattr(request.user, 'doctor_profile'):
         dashboard_url = reverse('doctor_dash')
-    elif hasattr(request.user, 'pharmacist'):
+    elif hasattr(request.user, 'pharmacist_profile'):
         dashboard_url = reverse('pharmacist_dash')
     else:
         dashboard_url = reverse('pharmacist_dash')

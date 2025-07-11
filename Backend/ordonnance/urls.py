@@ -1,15 +1,18 @@
 from django.urls import path
 from . import views
-
-from .views import ( 
+from .views import (
     PatientOrdonnanceListView, PatientOrdonnanceDetailView, RequestRenewalView,
     OrdonnanceCreateView, OrdonnanceUpdateView, OrdonnanceDetailView, OrdonnanceDeleteView, SignOrdonnanceView, RenewOrdonnanceView,
-    ValidateOrdonnanceView, ReportOrdonnanceView, BlockOrdonnanceView, PharmacistOrdonnanceDetailView
+    ValidateOrdonnanceView, ReportOrdonnanceView, BlockOrdonnanceView, PharmacistOrdonnanceDetailView,
+    PatientSearchAPI, PatientOrdonnanceListAPI
 )
 
+app_name = 'ordonnance'
+
 urlpatterns = [
+
     # Patient endpoints
-    path('patient/prescriptions/', PatientOrdonnanceListView.as_view(), name='patient_ordonnance_list'),
+    path('patient/ordonnance/', PatientOrdonnanceListView.as_view(), name='patient_ordonnance_list'),
     path('patient/ordonnance/<int:pk>/', PatientOrdonnanceDetailView.as_view(), name='patient_ordonnance_detail'),
     path('patient/ordonnance/<int:pk>/request-renewal/', RequestRenewalView.as_view(), name='request_renewal'),
     # Doctor URLs
@@ -25,6 +28,10 @@ urlpatterns = [
     path('pharmacist/ordonnance/<int:pk>/block/', BlockOrdonnanceView.as_view(), name='block_ordonnance'),
     path('pharmacist/ordonnance/<int:pk>/', PharmacistOrdonnanceDetailView.as_view(), name='pharmacist_ordonnance_detail'),
 
+    path('pharmacist/patient-search/', PatientSearchAPI.as_view(), name='patient_search'),
+    path('pharmacist/patient/<int:patient_id>/ordonnances/', PatientOrdonnanceListAPI.as_view(), name='patient_ordonnances'),
+    path('pharmacist/ordonnance/<int:pk>/', PharmacistOrdonnanceDetailView.as_view(), name='pharmacist_ordonnance_detail'),
+    
     #Utils
     path('ajax/patient-search/', views.patient_search, name='patient_search'),
 ]
