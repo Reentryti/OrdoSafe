@@ -2,6 +2,7 @@ from django import forms
 from .models import Ordonnance
 from phonenumber_field.formfields import PhoneNumberField
 from django.core.exceptions import ValidationError
+from datetime import date
 
 class OrdonnanceForm(forms.Form):
     # Patient informations
@@ -16,6 +17,10 @@ class OrdonnanceForm(forms.Form):
     patient_date_birth = forms.DateField(
         label="Date de naissance",
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    patient_email = forms.EmailField(
+        label='Email du patient',
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'type': 'email'})
     )
     patient_phone = PhoneNumberField(
         label="Numéro de téléphone du patient", 
@@ -44,6 +49,16 @@ class OrdonnanceForm(forms.Form):
         self.doctor = kwargs.pop('doctor', None)
         super().__init__(*args, **kwargs)
 
+    def clean_patient_date_birth(self):
+        birth_date = self.cleaned_data.get('patient_date_birth')
+        if birth_date:
+            if birth_date > date.today():
+                raise ValidationError("La date de naissance ne peut pas être dans le futur.")
+            
+            age = (date.today() - birth_date).days / 365.25
+            if age > 100:
+                raise ValidationError("Date de naissance non valide.")
+
     def clean_medicaments(self):
         raw_meds = self.cleaned_data['medicaments']
         if not raw_meds.strip():
@@ -67,9 +82,11 @@ class OrdonnanceForm(forms.Form):
             raise ValidationError("Aucun médecin spécifié.")
 
         ordonnance = Ordonnance(
-            patient_nom=self.cleaned_data['patient_last_name'],
-            patient_prenom=self.cleaned_data['patient_first_name'],
-            patient_date_naissance=self.cleaned_data['patient_date_birth'],
+            patient_last_name=self.cleaned_data['patient_last_name'],
+            patient_first_name=self.cleaned_data['patient_first_name'],
+            patient_date_birth=self.cleaned_data['patient_date_birth'],
+            patient_email=self.cleaned_data.get('patient_email', ''),
+            patient_phone=str(self.cleaned_data['patient_phone']),
             medicaments=self.cleaned_data['medicaments'],
             notes=self.cleaned_data['notes'],
             doctor=self.doctor,

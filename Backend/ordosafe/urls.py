@@ -16,8 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import render
+
+def home(request):
+    return render(request, 'home.html')
 
 urlpatterns = [
+
+    path('', home, name='home'),
     # Admin URL
     # This is the URL for the Django admin interface
     path('admin/', admin.site.urls),
@@ -27,5 +33,5 @@ urlpatterns = [
     # Include the URLs for Django Allauth
     # This is used for user authentication, registration, and social account management
     #path('accounts/', include('allauth.urls')), 
-    path('ordonnance/', include('ordonnance.urls')),
+    path('ordonnance/', include('ordonnance.urls', namespace='ordonnance')),
 ]

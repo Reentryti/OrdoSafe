@@ -162,7 +162,7 @@ FIELD_ENCRYPTION_KEY = FERNET_KEY
 LOGIN_ATTEMPTS_LIMIT = config('LOGIN_ATTEMPTS_LIMIT', default=5, cast=int)
 LOGIN_LOCKOUT_DURATION = config('LOGIN_LOCKOUT_DURATION', default=60, cast=int)
 
-# Email 2FA Configuration
+# Email OTP Configuration
 #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 #EMAIL_HOST = config('EMAIL_HOST')
 #EMAIL_PORT = config('EMAIL_PORT')
@@ -170,10 +170,10 @@ LOGIN_LOCKOUT_DURATION = config('LOGIN_LOCKOUT_DURATION', default=60, cast=int)
 #EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 #EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
-# Sms 2FA Configuration
-#TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
-#TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
-#TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER')
+# Sms Twilio OTP Configuration
+TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER')
 
 # Session configuration
 SESSION_COOKIE_AGE = 900

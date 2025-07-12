@@ -8,103 +8,90 @@
                 <h3 class="mb-0">
                     <i class="fas fa-file-prescription"></i> Ordonnance #{{ ordonnance.id }}
                 </h3>
-                <div>
-                    {% include "ordonnance/partials/_signature_status.html" with ordonnance=ordonnance large=True %}
-                </div>
+                <span class="badge bg-{% if ordonnance.status == 'draft' %}secondary{% elif ordonnance.status == 'issued' %}success{% else %}warning{% endif %}">
+                    {{ ordonnance.get_status_display }}
+                </span>
             </div>
         </div>
         
         <div class="card-body">
             <div class="row mb-4">
+                <!-- Patient Info -->
                 <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-header bg-light">
                             <h4 class="mb-0"><i class="fas fa-user-injured"></i> Patient</h4>
                         </div>
                         <div class="card-body">
-                            <h5>{{ ordonnance.patient.user.get_full_name }}</h5>
+                            <h5>{{ ordonnance.patient_first_name }} {{ ordonnance.patient_last_name }}</h5>
                             <ul class="list-unstyled">
                                 <li>
                                     <strong>Date de naissance:</strong> 
-                                    {{ ordonnance.patient.user.date_birth|date:"d/m/Y" }}
+                                    {{ ordonnance.patient_date_birth|date:"d/m/Y" }}
                                 </li>
                                 <li>
-                                    <strong>Groupe sanguin:</strong> 
-                                    <span class="badge bg-danger">
-                                        {{ ordonnance.patient.blood_type }}
-                                    </span>
+                                    <strong>Téléphone:</strong> 
+                                    {{ ordonnance.patient_phone|default:"Non renseigné" }}
                                 </li>
-                                {% if ordonnance.patient.allergies %}
                                 <li>
-                                    <strong>Allergies:</strong> 
-                                    <span class="text-danger">
-                                        {{ ordonnance.patient.allergies }}
-                                    </span>
+                                    <strong>Email:</strong> 
+                                    {{ ordonnance.patient_email|default:"Non renseigné" }}
                                 </li>
-                                {% endif %}
+                                <li>
+                                    <strong>Code d'accès :</strong>
+                                    <span class="badge bg-info text-dark">{{ ordonnance.access_code }}</span>
+                                </li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Doctor -->
                 <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-header bg-light">
                             <h4 class="mb-0"><i class="fas fa-user-md"></i> Médecin Prescripteur</h4>
                         </div>
                         <div class="card-body">
-                            <h5>Dr. {{ ordonnance.medecin.user.get_full_name }}</h5>
+                            <h5>Dr. {{ ordonnance.doctor.user.get_full_name }}</h5>
                             <ul class="list-unstyled">
+                                {% if ordonnance.doctor.specialisation %}
                                 <li>
                                     <strong>Spécialité:</strong> 
-                                    {{ ordonnance.medecin.get_specialisation_display }}
+                                    {{ ordonnance.doctor.get_specialisation_display }}
                                 </li>
+                                {% endif %}
+                                {% if ordonnance.doctor.licence_number %}
                                 <li>
-                                    <strong>N° Licence:</strong> 
-                                    {{ ordonnance.medecin.licence_number }}
+                                    <strong>N° Ordre:</strong> 
+                                    {{ ordonnance.doctor.licence_number }}
                                 </li>
-                                <li>
-                                    <strong>Contact:</strong> 
-                                    {{ ordonnance.medecin.user.phone_number }}
-                                </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
             
+            <!-- Drugs Block -->
             <div class="card mb-4 border-primary">
                 <div class="card-header bg-light">
                     <h4 class="mb-0"><i class="fas fa-pills"></i> Prescription Médicale</h4>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead class="table-primary">
-                                <tr>
-                                    <th>Médicament</th>
-                                    <th>DCI</th>
-                                    <th>Posologie</th>
-                                    <th>Durée</th>
-                                    <th>Quantité</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for med in ordonnance.medicaments %}
-                                <tr>
-                                    <td>{{ med.nom }}</td>
-                                    <td>{{ med.dci }}</td>
-                                    <td>{{ med.posologie }}</td>
-                                    <td>{{ med.duree }} jours</td>
-                                    <td>{{ med.quantite }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    {% if ordonnance.medicaments %}
+                    <div class="prescription-content">
+                        {{ ordonnance.medicaments|linebreaks }}
                     </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        Aucun médicament prescrit pour cette ordonnance.
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
+            <!-- Notes Block -->
             {% if ordonnance.notes %}
             <div class="card mb-4 border-info">
                 <div class="card-header bg-light">
@@ -116,6 +103,7 @@
             </div>
             {% endif %}
             
+            <!-- History block -->
             <div class="card border-secondary">
                 <div class="card-header bg-light">
                     <h4 class="mb-0"><i class="fas fa-history"></i> Historique</h4>
@@ -125,12 +113,14 @@
                         <li>
                             <strong>Créée le:</strong> 
                             {{ ordonnance.date_creation|date:"d/m/Y à H:i" }}
-                            par {{ ordonnance.created_by.get_full_name }}
                         </li>
-                        {% if ordonnance.date_emission %}
+                        {% if ordonnance.signature %}
                         <li>
                             <strong>Signée le:</strong> 
-                            {{ ordonnance.date_emission|date:"d/m/Y à H:i" }}
+                            {{ ordonnance.date_creation|date:"d/m/Y à H:i" }}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check-circle"></i> Signature valide
+                            </span>
                         </li>
                         {% endif %}
                     </ul>
@@ -140,32 +130,33 @@
         
         <div class="card-footer bg-light">
             <div class="d-flex justify-content-between">
-                <a href="{% url 'ordonnance_list' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                <a href="{% url 'doctor_dash' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour au tableau de bord
                 </a>
                 
                 <div>
-                    {% if ordonnance.can_edit %}
-                    <a href="{% url 'ordonnance_update' ordonnance.pk %}" 
+                    {% if ordonnance.status == 'draft' %}
+                    <a href="{% url 'doctor_ordonnance_update' ordonnance.pk %}" 
                        class="btn btn-outline-warning">
                         <i class="fas fa-edit"></i> Modifier
                     </a>
-                    {% endif %}
                     
-                    {% if ordonnance.can_sign %}
-                    <form method="post" action="{% url 'ordonnance_sign' ordonnance.pk %}" 
-                          class="d-inline">
+                    <form method="post" action="{% url 'sign_ordonnance' ordonnance.pk %}" 
+                          class="d-inline ms-2">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-success ms-2">
+                        <button type="submit" class="btn btn-success">
                             <i class="fas fa-signature"></i> Signer l'ordonnance
                         </button>
                     </form>
-                    {% endif %}
                     
-                    {% if ordonnance.can_delete %}
-                    <a href="{% url 'ordonnance_delete' ordonnance.pk %}" 
+                    <a href="{% url 'doctor_ordonnance_delete' ordonnance.pk %}" 
                        class="btn btn-outline-danger ms-2">
                         <i class="fas fa-trash-alt"></i> Supprimer
+                    </a>
+                    {% elif ordonnance.status == 'issued' %}
+                    <a href="{% url 'renew_ordonnance' ordonnance.pk %}" 
+                       class="btn btn-outline-info">
+                        <i class="fas fa-sync-alt"></i> Renouveler
                     </a>
                     {% endif %}
                 </div>
@@ -173,4 +164,14 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prescription-content {
+        white-space: pre-line;
+        font-family: monospace;
+        line-height: 1.8;
+    }
+</style>
 {% endblock %}

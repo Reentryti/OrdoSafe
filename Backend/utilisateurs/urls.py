@@ -15,10 +15,10 @@ urlpatterns = [
     path('account/2fa/reset/', Reset2FAView.as_view(), name='reset_2fa'),
     path('account/logout/', LogoutView.as_view(), name='logout'),
 
-    path('patient/login/', PatientLoginView.as_view(), name='patient_login'),
-    path('patient/login/2fa/', PatientLogin2faView.as_view(), name='patient_login_2fa'),
-    path('patient/signup/', PatientSignUpView.as_view(), name='patient_signup'),
-    path('patient/dash/', views.patient_dash, name='patient_dash'),
+    #path('patient/login/', PatientLoginView.as_view(), name='patient_login'),
+    #path('patient/login/2fa/', PatientLogin2faView.as_view(), name='patient_login_2fa'),
+    #path('patient/signup/', PatientSignUpView.as_view(), name='patient_signup'),
+    #path('patient/dash/', views.patient_dash, name='patient_dash'),
 
     path('doctor/login/', DoctorLoginView.as_view(), name='doctor_login'),
     path('doctor/login/2fa/', DoctorLogin2faView.as_view(), name='doctor_login_2fa'),

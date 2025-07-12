@@ -334,10 +334,11 @@ class DoctorSignUpView(BaseSignupView):
 
         user = self.object
 
-        doctor = user.doctor_profile
+        doctor, _ = Doctor.objects.get_or_create(user=user)
 
         if not doctor.private_key:
             doctor.generate_key_pair()
+            doctor.save(update_fields=['private_key', 'public_key'])
 
         return response
 
