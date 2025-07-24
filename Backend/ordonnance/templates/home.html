@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrdoSafe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #1cc88a;
+            --dark-color: #5a5c69;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+            min-height: 100vh;
+            font-family: 'Nunito', sans-serif;
+        }
+        
+        .hero-section {
+            background: url('https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') no-repeat center center;
+            background-size: cover;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+        
+        .auth-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .auth-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .doctor-card {
+            border-bottom: 5px solid var(--primary-color);
+        }
+        
+        .pharmacist-card {
+            border-bottom: 5px solid var(--secondary-color);
+        }
+        
+        .btn-doctor {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-pharmacist {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .wave-shape {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+        }
+        
+        .wave-shape svg {
+            position: relative;
+            display: block;
+            width: calc(100% + 1.3px);
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Nav -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-prescription-bottle-alt me-2"></i>OrdoSafe
+            </a>
+            
+        </div>
+    </nav>
+
+    <!-- View Noice section-->
+    <section class="hero-section text-white py-5">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <h1 class="display-4 fw-bold mb-4">Plateforme de prescription sécurisée</h1>
+                    <p class="lead mb-4">Solution numérique sécurisée pour les professionnels de santé et les pharmacies.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="#" class="btn btn-outline-light btn-lg px-4">
+                            <i class="fas fa-play-circle me-2"></i> Voir une démo
+                        </a>
+                    </div>
+                </div>
+               
+            </div>
+        </div>
+        <div class="wave-shape">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill" fill="#fff"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Auth Cards Section -->
+    <section id="auth-cards" class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Accès professionnel</h2>
+                <p class="lead text-muted">Sélectionnez votre profil pour vous connecter</p>
+            </div>
+            
+            <div class="row g-4 justify-content-center">
+                <!-- Card Doctor -->
+                <div class="col-md-6 col-lg-5">
+                    <div class="auth-card doctor-card h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="feature-icon">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <h3 class="card-title mb-3">Espace Médecin</h3>
+                            <p class="card-text text-muted mb-4">
+                                Créez et signez des ordonnances électroniques sécurisées pour vos patients.
+                            </p>
+                            <a href="{% url 'doctor_login' %}" class="btn btn-doctor text-white btn-lg w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i> Connexion Médecin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Pharmacist -->
+                <div class="col-md-6 col-lg-5">
+                    <div class="auth-card pharmacist-card h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="feature-icon">
+                                <i class="fas fa-prescription-bottle-alt"></i>
+                            </div>
+                            <h3 class="card-title mb-3">Espace Pharmacien</h3>
+                            <p class="card-text text-muted mb-4">
+                                Validez et gérez les ordonnances de vos clients en toute sécurité.
+                            </p>
+                            <a href="{% url 'pharmacist_login' %}" class="btn btn-pharmacist text-white btn-lg w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i> Connexion Pharmacien
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-5 bg-light">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Une solution complète</h2>
+                <p class="lead text-muted">Découvrez les avantages de notre plateforme</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 bg-white shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="text-primary mb-3">
+                                <i class="fas fa-lock fa-3x"></i>
+                            </div>
+                            <h4 class="card-title">Sécurité maximale</h4>
+                            <p class="card-text text-muted">
+                                Chiffrement des données et signatures électroniques pour une protection optimale.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 bg-white shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="text-primary mb-3">
+                                <i class="fas fa-bolt fa-3x"></i>
+                            </div>
+                            <h4 class="card-title">Rapidité</h4>
+                            <p class="card-text text-muted">
+                                Gagnez du temps avec une gestion simplifiée des ordonnances.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 bg-white shadow-sm h-100">
+                        <div class="card-body p-4 text-center">
+                            <div class="text-primary mb-3">
+                                <i class="fas fa-mobile-alt fa-3x"></i>
+                            </div>
+                            <h4 class="card-title">Accessibilité</h4>
+                            <p class="card-text text-muted">
+                                Accédez à la plateforme depuis n'importe quel appareil, à tout moment.(un Nice to have)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-prescription-bottle-alt me-2"></i>OrdoSafe</h5>
+                    <p class="text-muted">Solution innovante de gestion des ordonnances médicales.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Liens utiles</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted">Mentions légales</a></li>
+                        <li><a href="#" class="text-muted">CGU</a></li>
+                        <li><a href="#" class="text-muted">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled text-muted">
+                        <li><i class="fas fa-envelope me-2"></i> contact@ordosafe.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +221 33 123 45 67</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4 bg-secondary">
+            <div class="text-center text-muted">
+                <small>© 2023 OrdoSafe. Tous droits réservés.</small>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

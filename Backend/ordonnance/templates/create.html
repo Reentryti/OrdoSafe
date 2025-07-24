@@ -1,0 +1,646 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <!-- Header-->
+            <div class="header-card mb-4">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-file-prescription"></i>
+                    </div>
+                    <div class="header-text">
+                        <h2 class="mb-1">Nouvelle Ordonnance</h2>
+                        <p class="mb-0">Créez une prescription médicale sécurisée</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" id="ordonnance-form" novalidate>
+                {% csrf_token %}
+                
+                <!-- Errors -->
+                {% if form.non_field_errors %}
+                <div class="alert-modern alert-danger mb-4">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+                
+                <div class="row g-4">
+                    <!-- Patient Informations -->
+                    <div class="col-lg-6">
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="fas fa-user-injured"></i>
+                                <h4>Informations Patient</h4>
+                            </div>
+                            <div class="form-card-body">
+                                <div class="row g-3">
+                                    <!-- FirstName -->
+                                    <div class="col-12">
+                                        <div class="form-group-modern">
+                                            <input type="text" name="patient_first_name" id="id_patient_first_name" class="form-control-modern" placeholder="Prénom(s)" value="{{ form.patient_first_name.value|default:'' }}" required>
+                                            {% if form.patient_first_name.errors %}
+                                            <div class="error-message">
+                                                {{ form.patient_first_name.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- LastName -->
+                                    <div class="col-12">
+                                        <div class="form-group-modern">
+                                            <input type="text" name="patient_last_name" id="id_patient_last_name" class="form-control-modern" placeholder="Nom" value="{{ form.patient_last_name.value|default:'' }}" required>
+                                            {% if form.patient_last_name.errors %}
+                                            <div class="error-message">
+                                                {{ form.patient_last_name.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- PhoneNumber -->
+                                    <div class="col-12">
+                                        <div class="form-group-modern">
+                                            <input type="tel" name="patient_phone" id="id_patient_phone" class="form-control-modern" placeholder="Numéro de téléphone" value="{{ form.patient_phone.value|default:'' }}" required>
+                                            {% if form.patient_phone.errors %}
+                                            <div class="error-message">
+                                                {{ form.patient_phone.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="col-12">
+                                        <div class="form-group-modern">
+                                            <input type="email" name="patient_email" id="id_patient_email" class="form-control-modern" placeholder="Adresse email" value="{{ form.patient_email.value|default:'' }}" required>
+                                            {% if form.patient_email.errors %}
+                                            <div class="error-message">
+                                                {{ form.patient_email.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- DateBirth -->
+                                    <div class="col-12">
+                                        <div class="form-group-modern">
+                                            <input type="date" name="patient_date_birth" id="id_patient_date_birth" class="form-control-modern" placeholder="Date de naissance" value="{{ form.patient_date_birth.value|default:'' }}" required>
+                                            {% if form.patient_date_birth.errors %}
+                                            <div class="error-message">
+                                                {{ form.patient_date_birth.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Doctor Infos -->
+                    <div class="col-lg-6">
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="fas fa-user-md"></i>
+                                <h4>Médecin Prescripteur</h4>
+                            </div>
+                            <div class="form-card-body">
+                                <div class="doctor-info">
+                                    <div class="doctor-avatar">
+                                        <i class="fas fa-user-md"></i>
+                                    </div>
+                                    <div class="doctor-details">
+                                        <h5>{{ request.user.get_full_name }}</h5>
+                                        <p class="text-muted mb-0">
+                                            <i class="fas fa-envelope me-2"></i>{{ request.user.email }}
+                                        </p>
+                                        {% if request.user.doctor_profile.numero_ordre %}
+                                        <p class="text-muted mb-0">
+                                            <i class="fas fa-id-card me-2"></i>N° Ordre: {{ request.user.doctor_profile.numero_ordre }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Drugs -->
+                <div class="row g-4 mt-0">
+                    <div class="col-12">
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="fas fa-pills"></i>
+                                <h4>Prescription Médicamenteuse</h4>
+                            </div>
+                            <div class="form-card-body">
+                                <div class="info-pill mb-3">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Saisissez les médicaments sous format JSON ou liste séparée par des virgules</span>
+                                </div>
+                                
+                                <div class="form-group-modern">
+                                    <textarea name="medicaments" id="id_medicaments" class="form-control-modern" rows="6" placeholder=" " required>{{ form.medicaments.value|default:'' }}</textarea>
+                                    <label for="id_medicaments" class="form-label-modern">
+                                        <i class="fas fa-pills me-2"></i>Médicaments prescrits
+                                    </label>
+                                    {% if form.medicaments.errors %}
+                                    <div class="error-message">
+                                        {{ form.medicaments.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-flex gap-2 mt-3">
+                                    <button type="button" class="btn-example" id="add-json-example">
+                                        <i class="fas fa-code me-1"></i>Exemple JSON
+                                    </button>
+                                    <button type="button" class="btn-example" id="add-simple-example">
+                                        <i class="fas fa-list me-1"></i>Exemple simple
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notes -->
+                <div class="row g-4 mt-0">
+                    <div class="col-12">
+                        <div class="form-card">
+                            <div class="form-card-header">
+                                <i class="fas fa-comment-medical"></i>
+                                <h4>Instructions Complémentaires</h4>
+                            </div>
+                            <div class="form-card-body">
+                                <div class="form-group-modern">
+                                    <textarea name="notes" id="id_notes" class="form-control-modern" rows="4" placeholder=" ">{{ form.notes.value|default:'' }}</textarea>
+                                    <label for="id_notes" class="form-label-modern">
+                                        <i class="fas fa-comment me-2"></i>Notes et recommandations
+                                    </label>
+                                    {% if form.notes.errors %}
+                                    <div class="error-message">
+                                        {{ form.notes.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Buttons -->
+                <div class="action-buttons">
+                    <a href="{% url 'doctor_dash' %}" class="btn-secondary">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </a>
+                    <div class="btn-group">
+                        <button type="submit" name="save_draft" class="btn-outline">
+                            <i class="fas fa-save me-2"></i>Enregistrer brouillon
+                        </button>
+                        <button type="submit" name="issue" class="btn-primary">
+                            <i class="fas fa-file-signature me-2"></i>Signer et émettre
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS */
+:root {
+    --primary-color: #1976d2;
+    --primary-light: #42a5f5;
+    --primary-dark: #1565c0;
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --danger-color: #f44336;
+    --info-color: #2196f3;
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* En-tête moderne */
+.header-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    color: white;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.header-icon {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.header-text h2 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.header-text p {
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* Cartes de formulaire */
+.form-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+.form-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.form-card-header {
+    background: linear-gradient(135deg, var(--light-bg), #ffffff);
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.form-card-header i {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.form-card-header h4 {
+    margin: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.form-card-body {
+    padding: 1.5rem;
+}
+
+/* Champs de formulaire modernes */
+.form-group-modern {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.form-control-modern {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid #e0e0e0;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: var(--transition);
+    background: white;
+    color: #333;
+}
+
+.form-control-modern:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.form-control-modern:focus + .form-label-modern,
+.form-control-modern:not(:placeholder-shown) + .form-label-modern {
+    transform: translateY(-1.5rem) scale(0.85);
+    color: var(--primary-color);
+    background: white;
+    padding: 0 0.5rem;
+}
+
+.form-label-modern {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    padding: 0 0.5rem;
+    color: #666;
+    font-weight: 500;
+    transition: var(--transition);
+    pointer-events: none;
+}
+
+textarea.form-control-modern {
+    resize: vertical;
+    min-height: 120px;
+}
+
+textarea.form-control-modern + .form-label-modern {
+    top: 1rem;
+    transform: translateY(0);
+}
+
+textarea.form-control-modern:focus + .form-label-modern,
+textarea.form-control-modern:not(:placeholder-shown) + .form-label-modern {
+    transform: translateY(-1.5rem) scale(0.85);
+}
+
+/* Informations médecin */
+.doctor-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa, #e3f2fd);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(25, 118, 210, 0.1);
+}
+
+.doctor-avatar {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.doctor-details h5 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.doctor-details p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+/* Pill d'information */
+.info-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(33, 150, 243, 0.1);
+    color: var(--info-color);
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Boutons d'exemple */
+.btn-example {
+    background: rgba(25, 118, 210, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(25, 118, 210, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.btn-example:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Boutons d'action */
+.action-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 0;
+    margin-top: 2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.btn-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-secondary, .btn-outline, .btn-primary {
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+    box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+}
+
+/* Messages d'erreur */
+.error-message {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.error-message::before {
+    content: '⚠️';
+    font-size: 0.8rem;
+}
+
+.alert-modern {
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+}
+
+.alert-danger {
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--danger-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-secondary, .btn-outline, .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .doctor-info {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('add-json-example').addEventListener('click', function() {
+        const jsonExample = `[
+    {
+        "nom": "Paracétamol",
+        "dosage": "500mg",
+        "frequence": "3 fois par jour",
+        "duree": "7 jours"
+    },
+    {
+        "nom": "Ibuprofène",
+        "dosage": "400mg",
+        "frequence": "Matin et soir",
+        "duree": "5 jours"
+    }
+]`;
+        const textarea = document.getElementById('id_medicaments');
+        if (textarea.value.trim() === '') {
+            textarea.value = jsonExample;
+        } else {
+            textarea.value += '\n' + jsonExample;
+        }
+        textarea.focus();
+    });
+    
+    document.getElementById('add-simple-example').addEventListener('click', function() {
+        const simpleExample = "Paracétamol 500mg, Ibuprofène 400mg, Amoxicilline 1g";
+        const textarea = document.getElementById('id_medicaments');
+        if (textarea.value.trim() === '') {
+            textarea.value = simpleExample;
+        } else {
+            textarea.value += '\n' + simpleExample;
+        }
+        textarea.focus();
+    });
+    
+    // Form data validations
+    document.getElementById('ordonnance-form').addEventListener('submit', function(e) {
+        const medicaments = document.getElementById('id_medicaments').value.trim();
+        const patientLastName = document.getElementById('id_patient_last_name').value.trim();
+        const patientFirstName = document.getElementById('id_patient_first_name').value.trim();
+        const patientDateBirth = document.getElementById('id_patient_date_birth').value.trim();
+        const patientEmail = document.getElementById('id_patient_email').value.trim();
+        const patientPhone = document.getElementById('id_patient_phone').value.trim();
+
+        if (!medicaments || !patientLastName || !patientFirstName || !patientDateBirth || !patientEmail || !patientPhone) {
+            e.preventDefault();
+            
+            const existingAlert = document.querySelector('.alert-modern');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert-modern alert-danger mb-4';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Veuillez remplir tous les champs obligatoires</span>
+            `;
+            
+            const form = document.getElementById('ordonnance-form');
+            form.insertBefore(alertDiv, form.firstChild);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            return false;
+        }
+        
+        if (e.submitter && e.submitter.name === 'issue') {
+            if (!confirm('Êtes-vous sûr de vouloir signer et émettre cette ordonnance ? Cette action est irréversible.')) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    const inputs = document.querySelectorAll('.form-control-modern');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

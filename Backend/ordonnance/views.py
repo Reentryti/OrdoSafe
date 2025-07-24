@@ -118,9 +118,9 @@ class OrdonnanceCreateView(DoctorRequiredMixin, View):
                 user=request.user,
                 action="ORDONNANCE_CREATED",
                 ordonnance_id=ordonnance.id,
-                details=f"Créée pour {ordonnance.patient_prenom} {ordonnance.patient_nom}"
+                details=f"Créée pour {ordonnance.patient_first_name} {ordonnance.patient_last_name}"
             )
-            return redirect('doctor_ordonnance_detail', pk=ordonnance.id)
+            return redirect('ordonnance:doctor_ordonnance_detail', pk=ordonnance.id)
         return render(request, 'create.html', {'form': form})
 
 # Ordonnance Modification
@@ -130,7 +130,7 @@ class OrdonnanceUpdateView(DoctorRequiredMixin, View):
         if ordonnance.doctor != request.user.doctor_profile:
             raise PermissionDenied
         form = OrdonnanceForm(instance=ordonnance, doctor=request.user.doctor_profile)
-        return render(request, 'ordonnance/update.html', {'form': form, 'ordonnance': ordonnance})
+        return render(request, 'update.html', {'form': form, 'ordonnance': ordonnance})
     
     def post(self, request, pk):
         ordonnance = get_object_or_404(Ordonnance, pk=pk)
@@ -143,10 +143,10 @@ class OrdonnanceUpdateView(DoctorRequiredMixin, View):
                 user=request.user,
                 action="ORDONNANCE_UPDATED",
                 ordonnance_id=ordonnance.id,
-                details=f"Modifiée pour {ordonnance.patient_prenom} {ordonnance.patient_nom}"
+                details=f"Modifiée pour {ordonnance.patient_first_name} {ordonnance.patient_last_name}"
             )
-            return redirect('doctor_ordonnance_detail', pk=ordonnance.id)
-        return render(request, 'ordonnance/update.html', {'form': form, 'ordonnance': ordonnance})
+            return redirect('ordonnance:doctor_ordonnance_detail', pk=ordonnance.id)
+        return render(request, 'update.html', {'form': form, 'ordonnance': ordonnance})
 
 # Ordonnance Details
 class OrdonnanceDetailView(DoctorRequiredMixin, View):
@@ -309,7 +309,7 @@ class PharmacistOrdonnanceDetailView(PharmacistRequiredMixin, View):
             'medicaments': ordonnance.sensitive_data.get('medicaments', []),
             'is_pharmacist': True
         }
-        return render(request, 'ordonnance/detail.html', context)
+        return render(request, 'detail.html', context)
 
 
 # Search view
@@ -321,16 +321,16 @@ def search_ordonnances_by_patient_info(request):
         return JsonResponse({'results': []})
 
     ordonnances = Ordonnance.objects.filter(
-        Q(patient_nom__icontains=q) |
-        Q(patient_prenom__icontains=q) |
+        Q(patient_last_name__icontains=q) |
+        Q(patient_first_name__icontains=q) |
         Q(notes__icontains=q) |
         Q(_encrypted_data__icontains=q)
     ).order_by('-date_creation')[:20]
 
     results = [{
         'id': o.id,
-        'nom': o.patient_nom,
-        'prenom': o.patient_prenom,
+        'nom': o.patient_last_name,
+        'prenom': o.patient_first_name,
         'date': o.date_creation.strftime('%Y-%m-%d'),
         'status': o.status
     } for o in ordonnances]
@@ -349,15 +349,15 @@ def search_ordonnances_by_contact(request):
 
     ordonnances = Ordonnance.objects.filter(
         Q(patient_email__iexact=contact) |
-        Q(patient_telephone__icontains=contact),
+        Q(patient_phone__icontains=contact),
         access_code__iexact=code,
         status='issued'
     ).order_by('-date_creation')
 
     results = [{
         'id': o.id,
-        'nom': o.patient_nom,
-        'prenom': o.patient_prenom,
+        'nom': o.patient_last_name,
+        'prenom': o.patient_first_name,
         'date': o.date_creation.strftime('%Y-%m-%d'),
         'status': o.status
     } for o in ordonnances]
@@ -377,7 +377,6 @@ def patient_search(request):
         
         user = BasicUser.objects.get(phone_number=phone_number)
         
-     
         try:
             patient = user.patient_profile
             return JsonResponse({
@@ -406,14 +405,14 @@ def patient_search(request):
 
 class PatientSearchAPI(LoginRequiredMixin, View):
     def get(self, request):
-        query = request.GET.get('q', '').strip
+        query = request.GET.get('q', '').strip()
         
         if not query or len(query) < 2:
             return JsonResponse({'results': []})
 
         users = BasicUser.objects.filter(
             Q(first_name__icontains=query) |
-            Q(last_name_icontains=query) |
+            Q(last_name__icontains=query) |
             Q(phone_number_icontains=query),
             patient_profile__isnull=False
 

@@ -8,9 +8,8 @@ from datetime import timedelta
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from .fields import EncryptedBinaryField
-import hashlib
-from django_cryptography.fields import encrypt
-
+from encrypted_model_fields.fields import EncryptedCharField
+import hashlib, uuid
 
 # Create your models here.
 
@@ -30,14 +29,21 @@ class CustomUserManager(BaseUserManager):
         extrafields.setdefault('is_staff', True)
         extrafields.setdefault('is_superuser', True)
         return self.create_user(email, password, **extrafields)
+    #Email request function handler
+    def get_by_email(self, email):
+        email_hash = hashlib.sha256(email.encode()).hexdigest()
+        return self.get(email_hash=email_hash)
 
 # Basic Users Class
 class BasicUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     date_birth = models.DateField()
-    email = encrypt(models.EmailField(validators=[validate_email], unique=True))
-    phone_number = encrypt(PhoneNumberField(region='SN', blank=True, null=True, unique=True))
+
+    email = models.EmailField(validators=[validate_email], unique=True)
+    phone_number = PhoneNumberField(region='SN', blank=True, null=True, unique=True)
+    #phone_number = EncryptedEmailField(max_length=20, blank=True, null=True, unique=True, help_text="Format: +221XXXXXXXXX")
+
     two_factor_method = models.CharField(
         max_length=10,
         choices=[('email', 'Email'), ('sms', 'SMS')],
@@ -84,6 +90,9 @@ class BasicUser(AbstractBaseUser, PermissionsMixin):
          
         self.save()
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
 
 # Patients Class
 class Patient(models.Model):
@@ -108,7 +117,8 @@ class Patient(models.Model):
 # Doctors Class
 class Doctor(models.Model):
     user = models.OneToOneField(BasicUser, on_delete=models.CASCADE, related_name='doctor_profile')
-    licence_number = encrypt(models.CharField(max_length=30, unique=True))
+    licence_number = EncryptedCharField(max_length=255)
+    licence_number_hash = models.CharField(max_length=64, unique=True, editable=False, default='')
     specialisation = models.CharField(max_length=30)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -129,6 +139,13 @@ class Doctor(models.Model):
         ).decode('utf-8')
         self.save()
 
+    def save(self, *args, **kwargs):
+        if self.licence_number:
+            self.licence_number_hash = hashlib.sha256(
+                str(self.licence_number).encode()
+            ).hexdigest()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Dr. {self.user.get_full_name()}"
 
@@ -136,11 +153,18 @@ class Doctor(models.Model):
 # Pharmacist Class
 class Pharmacist(models.Model):
     user = models.OneToOneField(BasicUser, on_delete=models.CASCADE, related_name='pharmacist_profile')
-    licence_number = encrypt(models.CharField(max_length=30, unique=True))
+    licence_number = EncryptedCharField(max_length=255)
+    licence_number_hash = models.CharField(max_length=64, unique=True, editable=False, default='')
     pharmacy_name = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    def save(self, *args, **kwargs):
+        if self.licence_number:
+            self.licence_number_hash = hashlib.sha256(
+                str(self.licence_number).encode()
+            ).hexdigest()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.get_full_name()} (Pharmacien)"

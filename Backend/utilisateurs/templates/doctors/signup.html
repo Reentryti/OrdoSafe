@@ -112,16 +112,11 @@
         {% endif %}
     </div>
 
-    <button type="submit" class="btn btn-success w-100">S'inscrire comme Médecin</button>
+    <button type="submit" class="btn btn-success w-100">S'inscrire</button>
 </form>
 
 <div class="text-center mt-3">
     Déjà un compte? <a href="{% url 'doctor_login' %}">Se connecter</a>
 </div>
 
-<div class="text-center mt-2">
-    <small class="text-muted">
-        Vous êtes un patient? <a href="{% url 'patient_signup' %}">Créer un compte patient</a>
-    </small>
-</div>
 {% endblock %}

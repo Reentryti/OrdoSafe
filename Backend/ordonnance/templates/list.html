@@ -45,9 +45,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ ordonnance.date_creation|date:"d/m/Y" }}</td>
-                            <td>
-                                {% include "ordonnance/partials/_signature_status.html" with ordonnance=ordonnance %}
-                            </td>
+                         
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <a href="{% url 'ordonnance_detail' ordonnance.pk %}" 

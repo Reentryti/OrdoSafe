@@ -1,214 +1,293 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Médecin{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2 class="mb-0">
-                <i class="fas fa-user-md me-2"></i>Tableau de Bord Médecin
-            </h2>
+<!-- En-tête -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Gestion des ordonnances</h2>
+            <button id="new-ordonnance-btn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvelle ordonnance
+            </button>
         </div>
-        <div class="col-md-4 text-end">
-            <span class="badge bg-primary fs-6">
-                <i class="fas fa-star-of-life me-1"></i> {{ doctor.specialisation }}
-            </span>
-        </div>
-    </div>
 
-    <div class="row">
-        <!-- Statistiques rapides -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-primary border-5 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-muted mb-1">Ordonnances</h6>
-                            <h4 class="mb-0">{{ stats.total_ordonnances }}</h4>
-                        </div>
-                        <div class="icon-circle bg-primary text-white">
-                            <i class="fas fa-file-prescription"></i>
-                        </div>
+        <!-- Filtres -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <select id="status-filter" class="form-select">
+                            <option value="">Tous les statuts</option>
+                            <option value="draft">Brouillon</option>
+                            <option value="signed">Signée</option>
+                            <option value="expired">Expirée</option>
+                        </select>
                     </div>
-                    <hr>
-                    <small class="text-success">
-                        <i class="fas fa-arrow-up me-1"></i>
-                        {{ stats.monthly_ordonnances }} ce mois
-                    </small>
+                    <div class="col-md-6">
+                        <input type="text" id="patient-search" class="form-control" placeholder="Rechercher par patient...">
+                    </div>
+                    <div class="col-md-2">
+                        <button id="apply-filters" class="btn btn-secondary w-100">Filtrer</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-success border-5 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-muted mb-1">Patients</h6>
-                            <h4 class="mb-0">{{ stats.total_patients }}</h4>
-                        </div>
-                        <div class="icon-circle bg-success text-white">
-                            <i class="fas fa-user-injured"></i>
-                        </div>
-                    </div>
-                    <hr>
-                    <small class="text-success">
-                        <i class="fas fa-arrow-up me-1"></i>
-                        {{ stats.new_patients }} nouveaux
-                    </small>
-                </div>
-            </div>
+        <!-- Liste des ordonnances -->
+        <div id="ordonnances-list" class="list-group mb-4">
+            <!-- Les ordonnances seront chargées ici par JS -->
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-warning border-5 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-muted mb-1">À signer</h6>
-                            <h4 class="mb-0">{{ stats.ordonnances_to_sign }}</h4>
-                        </div>
-                        <div class="icon-circle bg-warning text-white">
-                            <i class="fas fa-signature"></i>
-                        </div>
-                    </div>
-                    <hr>
-                    <small class="text-danger">
-                        <i class="fas fa-clock me-1"></i>
-                        {{ stats.oldest_unsigned }} jours max
-                    </small>
-                </div>
-            </div>
-        </div>
+        <!-- Pagination -->
+        <nav aria-label="Page navigation">
+            <ul id="pagination" class="pagination justify-content-center">
+                <!-- Généré par JavaScript -->
+            </ul>
+        </nav>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-info border-5 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="text-muted mb-1">Rendez-vous</h6>
-                            <h4 class="mb-0">{{ stats.upcoming_appointments }}</h4>
-                        </div>
-                        <div class="icon-circle bg-info text-white">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                    </div>
-                    <hr>
-                    <small>
-                        <i class="fas fa-clock me-1"></i>
-                        Prochain: {{ stats.next_appointment|default:"Aucun" }}
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Dernières ordonnances -->
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-primary text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-file-prescription me-2"></i>Dernières Ordonnances</h5>
-                        <a href="{% url 'ordonnance_create' %}" class="btn btn-light btn-sm">
-                            <i class="fas fa-plus me-1"></i> Nouvelle
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    {% if recent_ordonnances %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Patient</th>
-                                    <th>Date</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for ordonnance in recent_ordonnances %}
-                                <tr>
-                                    <td>{{ ordonnance.id }}</td>
-                                    <td>{{ ordonnance.patient.user.get_full_name }}</td>
-                                    <td>{{ ordonnance.date_creation|date:"d/m/Y" }}</td>
-                                    <td>
-                                        {% if ordonnance.status == 'issued' %}
-                                        <span class="badge bg-success">Signée</span>
-                                        {% else %}
-                                        <span class="badge bg-warning text-dark">Brouillon</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'ordonnance_detail' ordonnance.pk %}" 
-                                               class="btn btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            {% if ordonnance.status == 'draft' %}
-                                            <a href="{% url 'ordonnance_update' ordonnance.pk %}" 
-                                               class="btn btn-outline-warning">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="fas fa-info-circle fa-3x mb-3"></i>
-                        <h5>Aucune ordonnance récente</h5>
-                        <p>Créez votre première ordonnance pour commencer</p>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="card-footer bg-light">
-                    <a href="{% url 'ordonnance_list' %}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-list me-1"></i> Voir toutes les ordonnances
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Patients récents -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-user-injured me-2"></i>Patients Récents</h5>
-                </div>
-                <div class="card-body">
-                    {% if recent_patients %}
-                    <div class="list-group list-group-flush">
-                        {% for patient in recent_patients %}
-                        <a href="#" class="list-group-item list-group-item-action">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">{{ patient.user.get_full_name }}</h6>
-                                    <small class="text-muted">
-                                        {{ patient.user.phone_number|default:"Tél. non renseigné" }}
-                                    </small>
-                                </div>
-                                <span class="badge bg-{{ patient.blood_type|lower }}">
-                                    {{ patient.blood_type }}
-                                </span>
-                            </div>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="fas fa-user-slash fa-3x mb-3"></i>
-                        <h5>Aucun patient récent</h5>
-                    </div>
-                    {% endif %}
-                </div>
+        <!-- Loading indicator -->
+        <div id="loading-indicator" class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Template pour une ordonnance -->
+<template id="ordonnance-template">
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1 patient-name"></h5>
+                <small class="text-muted ordonnance-date"></small>
+                <span class="badge status-badge ms-2"></span>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-primary view-btn me-1">
+                    <i class="fas fa-eye"></i> Voir
+                </button>
+                <button class="btn btn-sm btn-outline-secondary edit-btn me-1">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button class="btn btn-sm btn-outline-success sign-btn me-1">
+                    <i class="fas fa-signature"></i> Signer
+                </button>
+                <button class="btn btn-sm btn-outline-danger delete-btn">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ordonnancesList = document.getElementById('ordonnances-list');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const ordonnanceTemplate = document.getElementById('ordonnance-template');
+    const newOrdonnanceBtn = document.getElementById('new-ordonnance-btn');
+    const statusFilter = document.getElementById('status-filter');
+    const patientSearch = document.getElementById('patient-search');
+    const applyFilters = document.getElementById('apply-filters');
+    const pagination = document.getElementById('pagination');
+    
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let totalItems = 0;
+    
+    loadOrdonnances();
+    
+    newOrdonnanceBtn.addEventListener('click', () => {
+        window.location.href = "{% url 'ordonnance:doctor_ordonnance_create' %}";
+    });
+    
+    applyFilters.addEventListener('click', () => {
+        currentPage = 1;
+        loadOrdonnances();
+    });
+    
+    async function loadOrdonnances() {
+        showLoading(true);
+        ordonnancesList.innerHTML = '';
+        
+        try {
+            const filters = {
+                status: statusFilter.value,
+                patient: patientSearch.value,
+                page: currentPage,
+                page_size: itemsPerPage
+            };
+            
+            const response = await fetchOrdonnances(filters);
+            
+            if (response.results.length === 0) {
+                ordonnancesList.innerHTML = '<div class="text-center py-4 text-muted">Aucune ordonnance trouvée</div>';
+                return;
+            }
+            
+            response.results.forEach(ordonnance => {
+                const clone = ordonnanceTemplate.content.cloneNode(true);
+                
+                clone.querySelector('.patient-name').textContent = ordonnance.patient_name;
+                clone.querySelector('.ordonnance-date').textContent = `Créée le ${new Date(ordonnance.created_at).toLocaleDateString()}`;
+                
+                const statusBadge = clone.querySelector('.status-badge');
+                statusBadge.textContent = getStatusText(ordonnance.status);
+                statusBadge.className = `badge ${getStatusClass(ordonnance.status)}`;
+                
+                clone.querySelector('.view-btn').addEventListener('click', () => {
+                    window.location.href = `/doctor/ordonnance/${ordonnance.id}/`;
+                });
+                
+                clone.querySelector('.edit-btn').addEventListener('click', () => {
+                    window.location.href = `/doctor/ordonnance/${ordonnance.id}/update/`;
+                });
+                
+                clone.querySelector('.sign-btn').addEventListener('click', () => {
+                    signOrdonnance(ordonnance.id);
+                });
+                
+                clone.querySelector('.delete-btn').addEventListener('click', () => {
+                    deleteOrdonnance(ordonnance.id);
+                });
+                
+                ordonnancesList.appendChild(clone);
+            });
+            
+            totalItems = response.count;
+            updatePagination();
+            
+        } catch (error) {
+            console.error('Erreur:', error);
+            ordonnancesList.innerHTML = '<div class="text-center py-4 text-danger">Erreur lors du chargement des ordonnances</div>';
+        } finally {
+            showLoading(false);
+        }
+    }
+    
+    async function signOrdonnance(id) {
+        try {
+            const response = await fetch(`/doctor/ordonnance/${id}/sign/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                loadOrdonnances();
+            } else {
+                alert("Erreur lors de la signature");
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+        }
+    }
+    
+    async function deleteOrdonnance(id) {
+        if (!confirm("Êtes-vous sûr de vouloir supprimer cette ordonnance ?")) return;
+        
+        try {
+            const response = await fetch(`/doctor/ordonnance/${id}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                loadOrdonnances();
+            } else {
+                alert("Erreur lors de la suppression");
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+        }
+    }
+    
+    function showLoading(show) {
+        loadingIndicator.style.display = show ? 'block' : 'none';
+    }
+    
+    function getStatusClass(status) {
+        const statusMap = {
+            'draft': 'bg-secondary',
+            'signed': 'bg-success',
+            'expired': 'bg-warning',
+            'renewed': 'bg-info'
+        };
+        return statusMap[status] || 'bg-light text-dark';
+    }
+    
+    function getStatusText(status) {
+        const textMap = {
+            'draft': 'Brouillon',
+            'signed': 'Signée',
+            'expired': 'Expirée',
+            'renewed': 'Renouvelée'
+        };
+        return textMap[status] || status;
+    }
+    
+    function updatePagination() {
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        pagination.innerHTML = '';
+        
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            
+            const a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.textContent = i;
+            
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentPage = i;
+                loadOrdonnances();
+            });
+            
+            li.appendChild(a);
+            pagination.appendChild(li);
+        }
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    async function fetchOrdonnances(filters = {}) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        return {
+            count: 25,
+            results: Array.from({ length: Math.min(10, 25 - (filters.page - 1) * 10) }, (_, i) => ({
+                id: i + 1,
+                patient_name: `Patient ${i + 1}`,
+                created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+                status: ['draft', 'signed', 'expired'][Math.floor(Math.random() * 3)]
+            }))
+        };
+    }
+});
+</script>
 {% endblock %}

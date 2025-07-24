@@ -1,227 +1,382 @@
-{% extends "base.html" %}  
-
-{% block title %}Tableau de Bord Pharmacien - OrdoSafe{% endblock %}
-
+{% extends 'base.html' %}
 {% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">
-            <i class="fas fa-prescription-bottle-alt me-2 text-pharmacien"></i>
-            Tableau de Bord Pharmacien
-        </h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-                <button type="button" class="btn btn-sm btn-outline-pharmacien" data-bs-toggle="modal" data-bs-target="#scanModal">
-                    <i class="fas fa-qrcode me-1"></i> Scanner
-                </button>
+<div class="container mt-5">
+    <h2 class="text-center">Rechercher une ordonnance</h2>
+
+    <!-- Search Type Slection -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <button class="btn btn-outline-primary w-100" id="search-by-info-btn">
+                        <i class="fas fa-search"></i> Recherche par informations patient
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-outline-success w-100" id="search-by-contact-btn">
+                        <i class="fas fa-key"></i> Recherche par contact + code
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-pharmacien mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title">Ordonnances en attente</h6>
-                            <h2 class="mb-0">12</h2>
-                        </div>
-                        <i class="fas fa-clock fa-2x"></i>
-                    </div>
+    <!-- Patient search based on info -->
+    <div id="search-info-step" class="d-none">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-user-search"></i> Recherche par informations patient</h5>
+                <p class="mb-3">Recherchez une ordonnance en saisissant un nom, prénom ou toute autre information du patient.</p>
+                <div class="input-group">
+                    <input type="text" id="search-info-input" class="form-control" placeholder="Nom, prénom, notes...">
+                    <button class="btn btn-primary" id="search-info-btn">Rechercher</button>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-3">
-            <div class="card text-white bg-success mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title">Validées aujourd'hui</h6>
-                            <h2 class="mb-0">8</h2>
+    </div>
+
+    <!-- Patient search based on email/phone +code -->
+    <div id="search-contact-step" class="d-none">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-key"></i> Recherche par contact et code d'accès</h5>
+                <p class="mb-3">Recherchez une ordonnance avec l'email/téléphone du patient et son code d'accès.</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input type="text" id="contact-input" class="form-control" placeholder="Email ou téléphone">
                         </div>
-                        <i class="fas fa-check-circle fa-2x"></i>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card text-white bg-warning mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title">Signalements</h6>
-                            <h2 class="mb-0">2</h2>
+                    <div class="col-md-4">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="text" id="code-input" class="form-control" placeholder="Code d'accès">
                         </div>
-                        <i class="fas fa-exclamation-triangle fa-2x"></i>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card text-white bg-info mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title">Médicaments en rupture</h6>
-                            <h2 class="mb-0">3</h2>
-                        </div>
-                        <i class="fas fa-pills fa-2x"></i>
+                    <div class="col-md-2">
+                        <button class="btn btn-success w-100" id="search-contact-btn">Rechercher</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="row">
-        <!-- Ordonnances récentes -->
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-pharmacien text-white">
-                    <i class="fas fa-list-ul me-2"></i>
-                    Dernières Ordonnances
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Patient</th>
-                                    <th>Date</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>ORD-78945</td>
-                                    <td>Moussa Diallo</td>
-                                    <td>20/06/2023</td>
-                                    <td><span class="badge bg-warning">En attente</span></td>
-                                    <td>
-                                        <a href="#" class="btn btn-sm btn-outline-pharmacien">
-                                            <i class="fas fa-eye me-1"></i> Voir
-                                        </a>
-                                    </td>
-                                </tr>
-                                <!-- Ajoutez d'autres lignes ici -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <a href="{% url 'pharmacist_login' %}" class="btn btn-pharmacien mt-3">
-                        <i class="fas fa-list me-1"></i> Voir toutes les ordonnances
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-pharmacien text-white">
-                    <i class="fas fa-bell me-2"></i>
-                    Alertes
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Doliprane 1000</strong> en rupture de stock
-                    </div>
-                    <div class="alert alert-danger">
-                        <i class="fas fa-skull-crossbones me-2"></i>
-                        Ordonnance <strong>#ORD-12345</strong> signalée
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card mt-4">
-                <div class="card-header bg-pharmacien text-white">
-                    <i class="fas fa-bolt me-2"></i>
-                    Actions Rapides
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-pharmacien">
-                            <i class="fas fa-search me-2"></i> Rechercher une ordonnance
-                        </button>
-                        <button class="btn btn-outline-pharmacien">
-                            <i class="fas fa-file-import me-2"></i> Importer une ordonnance
-                        </button>
-                        <button class="btn btn-outline-pharmacien">
-                            <i class="fas fa-user-clock me-2"></i> Patients en attente
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Results -->
+    <div id="ordonnances-step" class="d-none mt-4">
+        <button class="btn btn-secondary mb-3" id="back-to-search">← Retour</button>
+        <h4>Ordonnances trouvées :</h4>
+        <div id="no-ordonnances" class="alert alert-warning d-none">Aucune ordonnance trouvée.</div>
+        <div id="error-message" class="alert alert-danger d-none"></div>
+        <div id="ordonnances-container" class="row gy-3 mt-2"></div>
     </div>
+
+    <!-- Template Ordonnance -->
+    <template id="ordonnance-template">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">Ordonnance #<span class="ordonnance-id"></span></h5>
+                        <span class="badge ordonnance-status"></span>
+                    </div>
+                    <p class="mb-1"><strong>Patient :</strong> <span class="patient-nom"></span> <span class="patient-prenom"></span></p>
+                    <p class="mb-2"><strong>Date :</strong> <span class="ordonnance-date"></span></p>
+                    <div class="mt-3">
+                        <button class="btn btn-primary btn-sm view-details" data-id="">
+                            <i class="fas fa-eye"></i> Voir détails
+                        </button>
+                        <button class="btn btn-success btn-sm process-ordonnance" data-id="">
+                            <i class="fas fa-pills"></i> Traiter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 
-<!-- Scan Modal -->
-<div class="modal fade" id="scanModal" tabindex="-1" aria-labelledby="scanModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Ordonnance details -->
+<div class="modal fade" id="ordonnanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-pharmacien text-white">
-                <h5 class="modal-title" id="scanModalLabel">
-                    <i class="fas fa-qrcode me-2"></i> Scanner une Ordonnance
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de l'ordonnance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center">
-                <div id="scanner-container" class="mb-3" style="width: 100%; height: 300px; background: #eee;"></div>
-                <p class="text-muted">Positionnez le QR code dans le cadre pour scanner</p>
-                <button class="btn btn-pharmacien" id="startScanner">
-                    <i class="fas fa-camera me-2"></i> Démarrer le Scanner
-                </button>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Styles spécifiques -->
-<style>
-    .bg-pharmacien {
-        background-color: #6a1b9a;
-    }
-    .btn-pharmacien {
-        background-color: #6a1b9a;
-        border-color: #6a1b9a;
-        color: white;
-    }
-    .btn-outline-pharmacien {
-        color: #6a1b9a;
-        border-color: #6a1b9a;
-    }
-    .btn-outline-pharmacien:hover {
-        background-color: #6a1b9a;
-        color: white;
-    }
-    .text-pharmacien {
-        color: #6a1b9a;
-    }
-    .card {
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-    }
-    .card-header {
-        border-radius: 10px 10px 0 0 !important;
-    }
-</style>
-
-<!-- Script pour le scanner -->
+{% block extra_js %}
 <script>
-    document.getElementById('startScanner').addEventListener('click', function() {
-        // Implémentation du scanner QR code
-        alert('Fonctionnalité de scanner à implémenter');
+document.addEventListener('DOMContentLoaded', function () {
+   
+    const searchByInfoBtn = document.getElementById('search-by-info-btn');
+    const searchByContactBtn = document.getElementById('search-by-contact-btn');
+    const searchInfoStep = document.getElementById('search-info-step');
+    const searchContactStep = document.getElementById('search-contact-step');
+    const ordonnancesStep = document.getElementById('ordonnances-step');
+    const backBtn = document.getElementById('back-to-search');
+    const ordonnancesContainer = document.getElementById('ordonnances-container');
+    const noOrdonnances = document.getElementById('no-ordonnances');
+    const errorMessage = document.getElementById('error-message');
+    const ordonnanceTemplate = document.getElementById('ordonnance-template');
+
+    let currentSearchType = null;
+
+    searchByInfoBtn.addEventListener('click', function () {
+        currentSearchType = 'info';
+        searchInfoStep.classList.remove('d-none');
+        searchContactStep.classList.add('d-none');
+        searchByInfoBtn.classList.remove('btn-outline-primary');
+        searchByInfoBtn.classList.add('btn-primary');
+        searchByContactBtn.classList.remove('btn-success');
+        searchByContactBtn.classList.add('btn-outline-success');
     });
+
+    searchByContactBtn.addEventListener('click', function () {
+        currentSearchType = 'contact';
+        searchContactStep.classList.remove('d-none');
+        searchInfoStep.classList.add('d-none');
+        searchByContactBtn.classList.remove('btn-outline-success');
+        searchByContactBtn.classList.add('btn-success');
+        searchByInfoBtn.classList.remove('btn-primary');
+        searchByInfoBtn.classList.add('btn-outline-primary');
+    });
+
+    
+    document.getElementById('search-info-btn').addEventListener('click', function () {
+        const query = document.getElementById('search-info-input').value.trim();
+        if (query.length < 2) {
+            alert("Veuillez entrer au moins 2 caractères");
+            return;
+        }
+
+        searchOrdonnances(`/ordonnance/pharmacist/ordonnance/search-info/?q=${encodeURIComponent(query)}`);
+    });
+
+    document.getElementById('search-contact-btn').addEventListener('click', function () {
+        const contact = document.getElementById('contact-input').value.trim();
+        const code = document.getElementById('code-input').value.trim();
+        
+        if (!contact || !code) {
+            alert("Veuillez remplir les champs contact et code d'accès");
+            return;
+        }
+
+        searchOrdonnances(`/ordonnance/pharmacist/ordonnance/search-contact/?contact=${encodeURIComponent(contact)}&code=${encodeURIComponent(code)}`);
+    });
+
+
+    function searchOrdonnances(url) {
+        console.log('Recherche lancée vers:', url);
+        
+        fetch(url)
+            .then(response => {
+                console.log('Réponse reçue:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log(' Données reçues:', data);
+                console.log(' Nombre de résultats:', data.results ? data.results.length : 'Aucun');
+                
+                if (data.results && data.results.length > 0) {
+                    console.log(' Premier résultat:', data.results[0]);
+                    console.log('Clés disponibles:', Object.keys(data.results[0]));
+                }
+                
+                ordonnancesContainer.innerHTML = '';
+                noOrdonnances.classList.add('d-none');
+                errorMessage.classList.add('d-none');
+
+                if (data.error) {
+                    console.log('Erreur dans la réponse:', data.error);
+                    errorMessage.textContent = data.error;
+                    errorMessage.classList.remove('d-none');
+                    return;
+                }
+
+                if (data.results.length === 0) {
+                    console.log('Aucun résultat trouvé');
+                    noOrdonnances.classList.remove('d-none');
+                } else {
+                    console.log(' Traitement des résultats...');
+                    
+                    data.results.forEach((ordonnance, index) => {
+                        console.log(` Traitement ordonnance ${index + 1}:`, ordonnance);
+                        
+                        const clone = ordonnanceTemplate.content.cloneNode(true);
+                        
+                        if (!clone.querySelector('.ordonnance-id')) {
+                            console.error(' Template non trouvé ou invalide!');
+                            return;
+                        }
+                        
+                        const idElement = clone.querySelector('.ordonnance-id');
+                        const nomElement = clone.querySelector('.patient-nom');
+                        const prenomElement = clone.querySelector('.patient-prenom');
+                        const dateElement = clone.querySelector('.ordonnance-date');
+                        
+                        console.log('Éléments du template:', {
+                            id: !!idElement,
+                            nom: !!nomElement,
+                            prenom: !!prenomElement,
+                            date: !!dateElement
+                        });
+                        
+                        if (idElement) idElement.textContent = ordonnance.id;
+                        if (nomElement) nomElement.textContent = ordonnance.nom || ordonnance.last_name || '';
+                        if (prenomElement) prenomElement.textContent = ordonnance.prenom || ordonnance.first_name || '';
+                        if (dateElement) dateElement.textContent = ordonnance.date;
+                        
+                        const statusBadge = clone.querySelector('.ordonnance-status');
+                        if (statusBadge) {
+                            statusBadge.textContent = getStatusText(ordonnance.status);
+                            statusBadge.className = `badge ${getStatusClass(ordonnance.status)}`;
+                        }
+                        
+                        const viewBtn = clone.querySelector('.view-details');
+                        const processBtn = clone.querySelector('.process-ordonnance');
+                        
+                        if (viewBtn) viewBtn.setAttribute('data-id', ordonnance.id);
+                        if (processBtn) processBtn.setAttribute('data-id', ordonnance.id);
+                        
+                        console.log(' Ajout de l\'ordonnance au container...');
+                        ordonnancesContainer.appendChild(clone);
+                    });
+                    
+                    console.log(' Ajout des événements aux boutons...');
+                    addButtonEvents();
+                    
+                    console.log(' Contenu final du container:', ordonnancesContainer.innerHTML.length + ' caractères');
+                }
+
+                searchInfoStep.classList.add('d-none');
+                searchContactStep.classList.add('d-none');
+                ordonnancesStep.classList.remove('d-none');
+                
+                console.log(' Affichage terminé');
+            })
+            .catch(err => {
+                console.error(' Erreur lors de la recherche:', err);
+                errorMessage.textContent = 'Erreur lors de la recherche. Veuillez réessayer.';
+                errorMessage.classList.remove('d-none');
+            });
+    }
+
+    backBtn.addEventListener('click', function () {
+        ordonnancesStep.classList.add('d-none');
+        if (currentSearchType === 'info') {
+            searchInfoStep.classList.remove('d-none');
+            document.getElementById('search-info-input').value = '';
+        } else if (currentSearchType === 'contact') {
+            searchContactStep.classList.remove('d-none');
+            document.getElementById('contact-input').value = '';
+            document.getElementById('code-input').value = '';
+        }
+    });
+
+    function getStatusText(status) {
+        const statusMap = {
+            'issued': 'Émise',
+            'processed': 'Traitée',
+            'cancelled': 'Annulée',
+            'expired': 'Expirée'
+        };
+        return statusMap[status] || status;
+    }
+
+    function getStatusClass(status) {
+        const classMap = {
+            'issued': 'bg-success',
+            'processed': 'bg-primary',
+            'cancelled': 'bg-danger',
+            'expired': 'bg-warning'
+        };
+        return classMap[status] || 'bg-secondary';
+    }
+
+    function addButtonEvents() {
+        document.querySelectorAll('.view-details').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const ordonnanceId = this.getAttribute('data-id');
+               
+                loadOrdonnanceDetails(ordonnanceId);
+            });
+        });
+
+        document.querySelectorAll('.process-ordonnance').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const ordonnanceId = this.getAttribute('data-id');
+                window.location.href = `/pharmacist/ordonnance/${ordonnanceId}/process/`;
+            });
+        });
+    }
+
+    function loadOrdonnanceDetails(ordonnanceId) {
+        fetch(`/ordonnance/pharmacist/ordonnance/${ordonnanceId}/`)
+            .then(response => response.json())
+            .then(data => {
+                let modalContent = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informations patient</h6>
+                            <p><strong>Nom :</strong> ${data.patient_nom}</p>
+                            <p><strong>Prénom :</strong> ${data.patient_prenom}</p>
+                            <p><strong>Email :</strong> ${data.patient_email || 'Non renseigné'}</p>
+                            <p><strong>Téléphone :</strong> ${data.patient_telephone || 'Non renseigné'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Informations ordonnance</h6>
+                            <p><strong>Date de création :</strong> ${data.date_creation}</p>
+                            <p><strong>Statut :</strong> ${getStatusText(data.status)}</p>
+                            <p><strong>Code d'accès :</strong> ${data.access_code}</p>
+                        </div>
+                    </div>
+                `;
+                
+                if (data.medicaments && data.medicaments.length > 0) {
+                    modalContent += `
+                        <div class="mt-3">
+                            <h6>Médicaments prescrits</h6>
+                            <ul class="list-group">
+                    `;
+                    data.medicaments.forEach(med => {
+                        modalContent += `<li class="list-group-item">${med.nom} - ${med.dosage}</li>`;
+                    });
+                    modalContent += `</ul></div>`;
+                }
+
+                document.getElementById('modal-body-content').innerHTML = modalContent;
+                
+                const modal = new bootstrap.Modal(document.getElementById('ordonnanceModal'));
+                modal.show();
+            })
+            .catch(err => {
+                console.error('Erreur lors du chargement des détails :', err);
+                alert('Erreur lors du chargement des détails de l\'ordonnance.');
+            });
+    }
+
+    document.getElementById('search-info-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('search-info-btn').click();
+        }
+    });
+
+    document.getElementById('code-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('search-contact-btn').click();
+        }
+    });
+});
 </script>
 {% endblock %}

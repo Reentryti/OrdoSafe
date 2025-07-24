@@ -1,61 +1,123 @@
-{% extends "base_auth.html" %}
+{% extends "_base_auth.html" %}
 
-{% block title %}Connexion Pharmacien - OrdoSafe{% endblock %}
+{% block title %}Connexion{% endblock %}
 
-{% block header_class %}pharmacien{% endblock %}
+{% block gradient_start %}#4facfe{% endblock %}
+{% block gradient_end %}#00f2fe{% endblock %}
 
-{% block auth_title %}
-<i class="fas fa-prescription-bottle-alt me-2"></i>Espace Pharmacien
-{% endblock %}
+{% block illustration_icon %}<i class="fas fa-sign-in-alt"></i>{% endblock %}
+{% block illustration_title %}Connexion{% endblock %}
+{% block auth_subtitle %}Accédez à votre espace personnel{% endblock %}
 
 {% block auth_content %}
-<form method="post" novalidate>
+<form method="post">
     {% csrf_token %}
     
-    <!-- Champ Numéro de Licence -->
-    <div class="mb-3">
-        <label for="id_license" class="form-label">Numéro de Licence</label>
-        <div class="input-group">
-            <span class="input-group-text">PH-</span>
-            <input type="text" class="form-control" id="id_license" 
-                   name="license" required pattern="[A-Z]{2}\d{6}"
-                   placeholder="AB123456">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert-modern alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% if form.errors %}
+        <div class="alert-modern alert-danger">
+            <i class="fas fa-times-circle"></i> Identifiants incorrects. Veuillez réessayer.
         </div>
-        <small class="text-muted">Format: 2 lettres + 6 chiffres</small>
+    {% endif %}
+    
+    <div class="mb-3">
+        <label for="id_email" class="form-label">Email</label>
+        <div class="position-relative">
+            <input type="email" name="email" class="form-control" required id="id_email" 
+                   value="{{ request.POST.email|default:'' }}" placeholder="votre@email.com">
+            <i class="fas fa-envelope input-icon"></i>
+        </div>
     </div>
     
-    <!-- Champ Mot de passe -->
     <div class="mb-3">
         <label for="id_password" class="form-label">Mot de passe</label>
-        <input type="password" class="form-control" id="id_password" 
-               name="password" required>
+        <div class="position-relative">
+            <input type="password" name="password" class="form-control" required id="id_password" 
+                   placeholder="••••••••">
+            <i class="fas fa-lock input-icon"></i>
+        </div>
     </div>
     
-    <!-- Bouton de soumission -->
-    <div class="d-grid gap-2 mt-4">
-        <button type="submit" class="btn btn-pharmacien btn-lg">
-            <i class="fas fa-sign-in-alt me-2"></i>Se connecter
-        </button>
-    </div>
+    <button type="submit" class="btn btn-auth w-100">Se connecter</button>
     
-    <!-- Lien vers l'inscription -->
-    <div class="text-center mt-3">
-        <a href="{% url 'pharmacist_signup' %}" class="text-decoration-none">
-            Créer un compte pharmacien
-        </a>
+    <div class="auth-footer">
+        <p>Vous n'avez pas encore de compte ?</p>
+        <p><a href="{% url 'pharmacist_signup' %}">Créer un compte</a></p>
     </div>
 </form>
 
 <style>
+    .position-relative {
+        position: relative;
+    }
+    
+    .input-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #667eea;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus + .input-icon {
+        color: #764ba2;
+        opacity: 1;
+    }
+    
     .btn-pharmacien {
-        background-color: #6a1b9a;
+        background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
         border: none;
+        border-radius: 12px;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
+    
     .btn-pharmacien:hover {
-        background-color: #5e1490;
+        background: linear-gradient(135deg, #5e1490 0%, #7b1fa2 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(106, 27, 154, 0.3);
     }
+    
     .auth-header.pharmacien {
-        background-color: #6a1b9a;
+        background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
+    }
+    
+    .auth-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .auth-footer p {
+        margin: 5px 0;
+        color: #666;
+    }
+
+    .auth-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .auth-footer a:hover {
+        color: #764ba2;
+        text-decoration: underline;
     }
 </style>
 {% endblock %}

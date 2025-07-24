@@ -1,37 +1,123 @@
-{% extends "base_auth.html" %}
-{% block title %}Connexion{% endblock %}
-{% block header_class %}primary{% endblock %}
+{% extends "_base_auth.html" %}
 
-{% block auth_title %}Connexion{% endblock %}
+{% block title %}Connexion{% endblock %}
+
+{% block gradient_start %}#4facfe{% endblock %}
+{% block gradient_end %}#00f2fe{% endblock %}
+
+{% block illustration_icon %}<i class="fas fa-user-md"></i>{% endblock %}
+{% block illustration_title %}Connexion Médecin{% endblock %}
+{% block auth_subtitle %}Accédez à votre espace médical{% endblock %}
 
 {% block auth_content %}
-  <form method="post">
+<form method="post">
     {% csrf_token %}
     
     {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-danger">
-          {{ message }}
-        </div>
-      {% endfor %}
+        {% for message in messages %}
+            <div class="alert-modern alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ message }}
+            </div>
+        {% endfor %}
     {% endif %}
     
     {% if form.errors %}
-      <div class="alert alert-danger">
-        Identifiants incorrects. Veuillez réessayer.
-      </div>
+        <div class="alert-modern alert-danger">
+            <i class="fas fa-times-circle"></i> Identifiants incorrects. Veuillez réessayer.
+        </div>
     {% endif %}
     
     <div class="mb-3">
-      <label for="id_email" class="form-label">Email</label>
-      <input type="email" name="email" class="form-control" required id="id_email" value="{{ request.POST.email|default:'' }}">
+        <label for="id_email" class="form-label">Email</label>
+        <div class="position-relative">
+            <input type="email" name="email" class="form-control" required id="id_email" 
+                   value="{{ request.POST.email|default:'' }}" placeholder="votre@email.com">
+            <i class="fas fa-envelope input-icon"></i>
+        </div>
     </div>
     
     <div class="mb-3">
-      <label for="id_password" class="form-label">Mot de passe</label>
-      <input type="password" name="password" class="form-control" required id="id_password">
+        <label for="id_password" class="form-label">Mot de passe</label>
+        <div class="position-relative">
+            <input type="password" name="password" class="form-control" required id="id_password" 
+                   placeholder="••••••••">
+            <i class="fas fa-lock input-icon"></i>
+        </div>
     </div>
     
-    <button type="submit" class="btn btn-primary w-100">Se connecter</button>
-  </form>
+    <button type="submit" class="btn btn-medecin w-100">Se connecter</button>
+    
+    <div class="auth-footer">
+        <p>Vous n'avez pas encore de compte ?</p>
+        <p><a href="{% url 'doctor_signup' %}">Créer un compte</a></p>
+    </div>
+</form>
+
+<style>
+    .position-relative {
+        position: relative;
+    }
+    
+    .input-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #667eea;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus + .input-icon {
+        color: #1976d2;
+        opacity: 1;
+    }
+    
+    .btn-medecin {
+        background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-medecin:hover {
+        background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(25, 118, 210, 0.3);
+    }
+    
+    .auth-header.medecin {
+        background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+    }
+    
+    .auth-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .auth-footer p {
+        margin: 5px 0;
+        color: #666;
+    }
+
+    .auth-footer a {
+        color: #1976d2;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .auth-footer a:hover {
+        color: #1565c0;
+        text-decoration: underline;
+    }
+</style>
 {% endblock %}
