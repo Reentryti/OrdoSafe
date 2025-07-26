@@ -137,7 +137,6 @@ class Doctor(models.Model):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).decode('utf-8')
-        self.save()
 
     def save(self, *args, **kwargs):
         if self.licence_number:
