@@ -1,0 +1,24 @@
+services:
+
+  backend:
+    build: ./Backend
+    env: ./Backend/.env
+    ports:
+      - ""
+    restart: unless_stopped
+    
+  frontend:
+    build: ./Frontend
+    ports:
+      - "5173:5173"
+      restart: unless_stopped
+    
+  db:
+    image: postgresql:
+    env: ./Backend/.env
+    volumes:
+      - postgresql
+    restart: unless_stoppped
+
+volumes:
+  postgresql_data:
