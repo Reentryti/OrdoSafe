@@ -7,27 +7,65 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  backend:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.11]
+        python-version: ["3.11"]
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install Dependencies
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config default-libmysqlclient-dev build-essential
+
+    - name: Install Python dependencies
+      working-directory: Backend
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Run Tests
+
+    - name: Run migrations
       working-directory: Backend
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        FERNET_KEY: ${{ secrets.FERNET_KEY }}
       run: |
-        python manage.py test --settings=ordosafe.settings_ci
+        python manage.py migrate --settings=ordosafe.settings_ci
+
+    - name: Run tests
+      working-directory: Backend
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        FERNET_KEY: ${{ secrets.FERNET_KEY }}
+      run: |
+        python manage.py test --settings=ordosafe.settings_ci --verbosity=2
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: "npm"
+        cache-dependency-path: Frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: Frontend
+      run: npm ci
+
+    - name: Build
+      working-directory: Frontend
+      run: npm run build
