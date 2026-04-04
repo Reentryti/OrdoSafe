@@ -1,22 +1,15 @@
-from django.views.generic import CreateView, UpdateView, DeleteView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .forms import OrdonnanceForm
-import json
-from audit.utils import log_security_event
 from .models import Ordonnance
 from django.shortcuts import render, redirect, get_object_or_404
-
 from django.views import View
 from django.http import JsonResponse
-from utilisateurs.models import Doctor, Patient, BasicUser
+from utilisateurs.models import Patient, BasicUser
 from django.utils import timezone
-from .forms import OrdonnanceForm
 from django.core.exceptions import PermissionDenied
-import logging
-from .utils import log_medical_action, log_security_event
+from .utils import log_medical_action, log_security_event, send_access_code
 from django.views.decorators.http import require_http_methods, require_GET
 from django.db.models import Q
-from .utils import send_access_code
 
 
 
@@ -34,11 +27,13 @@ class PatientRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 class PatientOrdonnanceListView(PatientRequiredMixin, View):
     def get(self, request):
-        patient = request.user.patient_profile
-        ordonnances = Ordonnance.objects.filter(patient=patient).order_by('-date_creation')
+        user = request.user
+        ordonnances = Ordonnance.objects.filter(
+            Q(patient_email__iexact=user.email) |
+            Q(patient_phone=str(user.phone_number))
+        ).order_by('-date_creation')
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json':
-            # Requête fetch() => on renvoie du JSON
             data = []
             for o in ordonnances:
                 data.append({
@@ -46,18 +41,18 @@ class PatientOrdonnanceListView(PatientRequiredMixin, View):
                     'doctor': str(o.doctor),
                     'date_creation': o.date_creation.isoformat(),
                     'status': o.status,
-                    'medicaments': o.medicaments  # doit être un dict ou JSONField
+                    'medicaments': o.medicaments
                 })
             return JsonResponse(data, safe=False)
 
-        # Sinon, on renvoie la page HTML classique
         return render(request, 'list.html', {'ordonnance': ordonnances})
 
 # Ordonnance Detail view
 class PatientOrdonnanceDetailView(PatientRequiredMixin, View):
     def get(self, request, pk):
         ordonnance = get_object_or_404(Ordonnance, pk=pk)
-        if ordonnance.patient != request.user.patient_profile:
+        user = request.user
+        if ordonnance.patient_email != user.email and str(ordonnance.patient_phone) != str(user.phone_number):
             raise PermissionDenied
         
         context = {
@@ -72,7 +67,8 @@ class PatientOrdonnanceDetailView(PatientRequiredMixin, View):
 class RequestRenewalView(PatientRequiredMixin, View):
     def post(self, request, pk):
         ordonnance = get_object_or_404(Ordonnance, pk=pk)
-        if ordonnance.patient != request.user.patient_profile:
+        user = request.user
+        if ordonnance.patient_email != user.email and str(ordonnance.patient_phone) != str(user.phone_number):
             raise PermissionDenied
         
         if ordonnance.status != 'issued':
@@ -86,8 +82,7 @@ class RequestRenewalView(PatientRequiredMixin, View):
             user=request.user,
             action="RENEWAL_REQUESTED",
             ordonnance_id=ordonnance.id,
-            patient=ordonnance.patient,
-            details="Demande de renouvellement par le patient"
+            details=f"Demande de renouvellement par {ordonnance.patient_first_name} {ordonnance.patient_last_name}"
         )
         #logger.info(f"Patient {request.user.get_full_name()} a demandé une demande de renouvellement pour l'ordonnance {pk}")
         return JsonResponse({'status': 'success', 'message': 'Demande de renouvellement envoyée au médecin'})
@@ -172,7 +167,7 @@ class OrdonnanceDeleteView(DoctorRequiredMixin, View):
             user=request.user,
             action="ORDONNANCE_DELETED",
             ordonnance_id=ordonnance.id,
-            details=f"Supprimée pour {ordonnance.patient_prenom} {ordonnance.patient_nom}"
+            details=f"Supprimée pour {ordonnance.patient_first_name} {ordonnance.patient_last_name}"
         )
         ordonnance.delete()
         return JsonResponse({'status': 'success', 'message': 'Ordonnance supprimée avec succès'})
@@ -209,20 +204,23 @@ class RenewOrdonnanceView(DoctorRequiredMixin, View):
             return JsonResponse({'status': 'error', 'message': 'Seules les ordonnances émises peuvent être renouvelées'}, status=400)
         
         new_ordonnance = Ordonnance.objects.create(
-            patient=original.patient,
+            patient_first_name=original.patient_first_name,
+            patient_last_name=original.patient_last_name,
+            patient_date_birth=original.patient_date_birth,
+            patient_phone=original.patient_phone,
+            patient_email=original.patient_email,
             doctor=original.doctor,
             medicaments=original.medicaments,
             status='draft',
             created_by=request.user,
             notes=f"Renouvellement de l'ordonnance #{original.id}"
         )
-        
+
         log_medical_action(
             user=request.user,
             action="ORDONNANCE_RENEWED",
             ordonnance_id=new_ordonnance.id,
-            patient=new_ordonnance.patient,
-            details=f"Renouvellement de #{original.id}"
+            details=f"Renouvellement de #{original.id} pour {original.patient_first_name} {original.patient_last_name}"
         )
         #logger.info(f"Dr {request.user.get_full_name()} a renouvellé la prescription {pk} as {new_ordonnance.id}")
         return JsonResponse({
@@ -323,8 +321,7 @@ def search_ordonnances_by_patient_info(request):
     ordonnances = Ordonnance.objects.filter(
         Q(patient_last_name__icontains=q) |
         Q(patient_first_name__icontains=q) |
-        Q(notes__icontains=q) |
-        Q(_encrypted_data__icontains=q)
+        Q(notes__icontains=q)
     ).order_by('-date_creation')[:20]
 
     results = [{
@@ -413,7 +410,7 @@ class PatientSearchAPI(LoginRequiredMixin, View):
         users = BasicUser.objects.filter(
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
-            Q(phone_number_icontains=query),
+            Q(phone_number__icontains=query),
             patient_profile__isnull=False
 
         ).select_related('patient_profile')[:10]
@@ -428,17 +425,19 @@ class PatientSearchAPI(LoginRequiredMixin, View):
 
 class PatientOrdonnanceListAPI(LoginRequiredMixin, View):
     def get(self, request, patient_id):
+        patient = get_object_or_404(Patient, pk=patient_id)
+        user = patient.user
         ordonnances = Ordonnance.objects.filter(
-            patient_id=patient_id,
+            Q(patient_email__iexact=user.email) |
+            Q(patient_phone=str(user.phone_number)),
             status='issued'
         ).select_related('doctor__user')
-        
+
         data = [{
             'id': o.id,
             'doctor': o.doctor.user.get_full_name(),
             'date_creation': o.date_creation.strftime('%d/%m/%Y'),
-            'expiry_date': o.expiry_date.strftime('%d/%m/%Y') if o.expiry_date else None,
             'medicaments': o.medicaments
         } for o in ordonnances]
-        
+
         return JsonResponse(data, safe=False)

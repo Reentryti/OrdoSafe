@@ -16,22 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import render
+from django.http import JsonResponse
 
-def home(request):
-    return render(request, 'home.html')
+def health(request):
+    return JsonResponse({'status': 'ok'})
 
 urlpatterns = [
-
-    path('', home, name='home'),
-    # Admin URL
-    # This is the URL for the Django admin interface
+    path('', health, name='health'),
     path('admin/', admin.site.urls),
-    # Include the URLs from the utilisateurs app
-    # This allows us to manage user accounts, including login, signup, and 2FA setup
-    path('api/', include('utilisateurs.urls')),
-    # Include the URLs for Django Allauth
-    # This is used for user authentication, registration, and social account management
-    #path('accounts/', include('allauth.urls')), 
-    path('ordonnance/', include('ordonnance.urls', namespace='ordonnance')),
+
+    # Legacy SSR routes (kept for URL name resolution in tests)
+    path('auth/', include('utilisateurs.urls')),
+
+    # JSON API for Vue.js frontend
+    path('api/v1/auth/', include('utilisateurs.api_urls')),
+    path('api/v1/', include('ordonnance.api_urls')),
 ]

@@ -46,12 +46,15 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     'django_otp.plugins.otp_static',
     'phonenumber_field', #phone field (compulsory)
+    'corsheaders',
+    'rest_framework',
     'audit.apps.AuditConfig',
     #'django_cryptography', #obsolete for newer django version
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -67,10 +70,7 @@ ROOT_URLCONF = 'ordosafe.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-           BASE_DIR / 'ordonnance' / 'templates',
-           BASE_DIR / 'utilisateurs' / 'templates', 
-        ],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -245,3 +245,16 @@ if not DEBUG:
         'level': 'CRITICAL',
         'propagate': False,
     }
+
+# CORS Configuration (Vue frontend)
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+]
+CORS_ALLOW_CREDENTIALS = True
+
+# Anti Brute Force - IP level
+MAX_LOGIN_ATTEMPTS_PER_IP = config('MAX_LOGIN_ATTEMPTS_PER_IP', default=20, cast=int)
+
+# Default email sender
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@ordosafe.com')

@@ -2,6 +2,8 @@ from django.utils.deprecation import MiddlewareMixin
 from .models import LoginAttempt
 from django.http import HttpResponseForbidden
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
 
 # Middleware to log login attempts
 class LoginAttemptMiddleware(MiddlewareMixin):
@@ -28,7 +30,7 @@ class BlockMaliciousIPMiddleware(MiddlewareMixin):
             timestamp__gte=timezone.now() - timedelta(hours=1)
         ).count()
 
-        if failure_count >= settings.MAX_LOGIN_ATTEMPTS_PER_IP:
+        if failure_count >= getattr(settings, 'MAX_LOGIN_ATTEMPTS_PER_IP', 10):
             return HttpResponseForbidden("Trop de tentatives de connexion dépassé. Veuillez réessayer plus tard.")
 
     def get_client_ip(self, request):

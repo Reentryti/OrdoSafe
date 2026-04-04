@@ -47,17 +47,30 @@ class OrdonnanceForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.doctor = kwargs.pop('doctor', None)
+        self.instance = kwargs.pop('instance', None)
         super().__init__(*args, **kwargs)
+        if self.instance:
+            self.fields['patient_first_name'].initial = self.instance.patient_first_name
+            self.fields['patient_last_name'].initial = self.instance.patient_last_name
+            self.fields['patient_date_birth'].initial = self.instance.patient_date_birth
+            self.fields['patient_email'].initial = self.instance.patient_email
+            self.fields['patient_phone'].initial = self.instance.patient_phone
+            self.fields['notes'].initial = self.instance.notes
+            if isinstance(self.instance.medicaments, list):
+                self.fields['medicaments'].initial = ', '.join(
+                    m.get('nom', str(m)) for m in self.instance.medicaments
+                )
 
     def clean_patient_date_birth(self):
         birth_date = self.cleaned_data.get('patient_date_birth')
         if birth_date:
             if birth_date > date.today():
                 raise ValidationError("La date de naissance ne peut pas être dans le futur.")
-            
+
             age = (date.today() - birth_date).days / 365.25
             if age > 100:
                 raise ValidationError("Date de naissance non valide.")
+        return birth_date
 
     def clean_medicaments(self):
         raw_meds = self.cleaned_data['medicaments']
@@ -81,20 +94,20 @@ class OrdonnanceForm(forms.Form):
         if not self.doctor:
             raise ValidationError("Aucun médecin spécifié.")
 
-        ordonnance = Ordonnance(
-            patient_last_name=self.cleaned_data['patient_last_name'],
-            patient_first_name=self.cleaned_data['patient_first_name'],
-            patient_date_birth=self.cleaned_data['patient_date_birth'],
-            patient_email=self.cleaned_data.get('patient_email', ''),
-            patient_phone=str(self.cleaned_data['patient_phone']),
-            medicaments=self.cleaned_data['medicaments'],
-            notes=self.cleaned_data['notes'],
-            doctor=self.doctor,
-            created_by=self.doctor.user
-        )
+        if self.instance:
+            ordonnance = self.instance
+        else:
+            ordonnance = Ordonnance(doctor=self.doctor, created_by=self.doctor.user)
+
+        ordonnance.patient_last_name = self.cleaned_data['patient_last_name']
+        ordonnance.patient_first_name = self.cleaned_data['patient_first_name']
+        ordonnance.patient_date_birth = self.cleaned_data['patient_date_birth']
+        ordonnance.patient_email = self.cleaned_data.get('patient_email', '')
+        ordonnance.patient_phone = str(self.cleaned_data['patient_phone'])
+        ordonnance.medicaments = self.cleaned_data['medicaments']
+        ordonnance.notes = self.cleaned_data['notes']
 
         if commit:
             ordonnance.save()
-            ordonnance.sign(self.doctor)
 
         return ordonnance

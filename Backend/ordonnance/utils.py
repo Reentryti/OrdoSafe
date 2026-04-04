@@ -57,7 +57,7 @@ def send_access_code(ordonnance):
     if ordonnance.patient_email:
         send_mail(
             subject="Votre code d'accès à l'ordonnance",
-            message=f"Bonjour {ordonnance.patient_prenom},\n\n"
+            message=f"Bonjour {ordonnance.patient_first_name},\n\n"
                     f"Code sécurisé : {code}\n"
                     f"Présentez-le au pharmacien avec votre numéro de téléphone ou email.",
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -66,10 +66,10 @@ def send_access_code(ordonnance):
         )
 
     # If patient got a phonenumber
-    if ordonnance.patient_telephone:
+    if ordonnance.patient_phone:
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         client.messages.create(
             body=f"Code ordonnance : {code}",
-            from_=settings.TWILIO_FROM_NUMBER,
-            to=str(ordonnance.patient_telephone)
+            from_=settings.TWILIO_PHONE_NUMBER,
+            to=str(ordonnance.patient_phone)
         )
