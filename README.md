@@ -97,35 +97,3 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-## 7. Tester l’API
-
-- http://127.0.0.1:8000/admin/
-- http://127.0.0.1:8000/api/ordonnances/
-- http://127.0.0.1:8000/api/medicaments/
-- http://127.0.0.1:8000/api/patient/signup/
-- http://127.0.0.1:8000/api/patient/login/
-
----
-
-##  Exemple JSON à tester (POST /api/ordonnances/)
-
-```json
-{
-  "patient": 2,
-  "medecin": 3,
-  "medicaments": [
-    {
-      "nom": "Doliprane",
-      "dosage": "500mg",
-      "frequence": "3 fois par jour"
-    },
-    {
-      "nom": "Amoxicilline",
-      "dosage": "250mg",
-      "frequence": "2 fois par jour"
-    }
-  ],
-  "statut": "validee"
-}
-```
-
