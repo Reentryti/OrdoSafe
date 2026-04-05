@@ -15,3 +15,4 @@ phonenumbers
 django-otp
 qrcode==7.4.2
 django-encrypted-model-fields
+twilio
