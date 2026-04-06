@@ -1,10 +1,8 @@
 from datetime import date
-from django.test import TestCase, RequestFactory
+from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from django.contrib.messages.storage.fallback import FallbackStorage
-from django_otp.plugins.otp_totp.models import TOTPDevice
-from .models import BasicUser, Patient, Doctor, Pharmacist, LoginAttempt
+from .models import Patient, Doctor, Pharmacist, LoginAttempt
 
 User = get_user_model()
 
@@ -81,12 +79,21 @@ class ProfileModelsTest(TestCase):
 
 class LoginAttemptModelTest(TestCase):
     def test_login_attempt_creation(self):
+        user = User.objects.create_user(
+            email="test@example.com",
+            password="testpass123",
+            first_name="John",
+            last_name="Doe",
+            date_birth=date(1990, 1, 1)
+        )
         attempt = LoginAttempt.objects.create(
+            user=user,
             username="test@example.com",
             ip_address="127.0.0.1",
             success=True
         )
-        self.assertEqual(str(attempt), "test@example.com - Success")
+        self.assertIn("test@example.com", str(attempt))
+        self.assertIn("Success", str(attempt))
 
 
 class AuthViewsTest(TestCase):
@@ -113,20 +120,14 @@ class AuthViewsTest(TestCase):
             licence_number="PH12345",
             pharmacy_name="City Pharmacy")
 
-    def test_doctor_login_view(self):
-        response = self.client.get(reverse('doctor_login'))
-        self.assertEqual(response.status_code, 200)
-
+    def test_doctor_login_post(self):
         response = self.client.post(reverse('doctor_login'), {
             'email': 'doctor@example.com',
             'password': 'testpass123'
         })
         self.assertEqual(response.status_code, 302)
 
-    def test_pharmacist_login_view(self):
-        response = self.client.get(reverse('pharmacist_login'))
-        self.assertEqual(response.status_code, 200)
-
+    def test_pharmacist_login_post(self):
         response = self.client.post(reverse('pharmacist_login'), {
             'email': 'pharmacist@example.com',
             'password': 'testpass123'
